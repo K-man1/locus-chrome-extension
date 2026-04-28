@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Blocked — Locus</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { padding: 0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .wrap { max-width: 540px; width: 100%; padding: 40px 28px; }
+    .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 28px; margin-bottom: 4px; }
+    .session-tag { display: inline-block; background: var(--accent-soft); color: #6e4d0a; padding: 4px 10px; border-radius: 999px; font-size: 12px; margin-bottom: 18px; }
+    .url { font-family: ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; color: var(--ink); background: var(--card); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .actions button { flex: 1; }
+    details { margin-top: 18px; }
+    summary { cursor: pointer; color: var(--ink-soft); font-size: 13px; }
+    .verdict { padding: 12px; border-radius: 8px; margin-top: 12px; }
+    .verdict.approved { background: #ebf5e7; color: #2c5825; border: 1px solid #c8e0bf; }
+    .verdict.denied { background: #fbeae5; color: #7a2a1c; border: 1px solid #e9c4b9; }
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">Locus</div>
+    <div class="session-tag" id="sessionTag">Focus session</div>
+
+    <h1 id="heading">This site isn't on your allowlist.</h1>
+    <p>You're focusing on <strong id="sessionName"></strong>. If you really need this page, tell the AI why.</p>
+
+    <div class="card">
+      <label>Blocked URL</label>
+      <div class="url" id="urlBox"></div>
+    </div>
+
+    <div class="card">
+      <label for="reason">Why do you need this site?</label>
+      <textarea id="reason" placeholder="e.g. I need to look up a formula for my math homework."></textarea>
+      <div class="actions">
+        <button class="primary" id="submitBtn">Ask the AI</button>
+        <button id="backBtn">Go back</button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <details>
+      <summary>I have an override code</summary>
+      <div class="card" style="margin-top: 8px;">
+        <label for="code">Override code</label>
+        <input type="password" id="code" autocomplete="off" placeholder="Enter your override code">
+        <div class="actions">
+          <button id="overrideBtn">Override</button>
+        </div>
+        <div id="overrideStatus"></div>
+      </div>
+    </details>
+  </div>
+
+  <script src="blocked.js"></script>
+</body>
+</html>

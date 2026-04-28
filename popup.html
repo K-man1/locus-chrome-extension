@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Locus</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { width: 320px; padding: 16px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .header .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 20px; }
+    .timer { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 22px; color: var(--ink); }
+    select { margin-bottom: 10px; }
+    .allowed-list { max-height: 120px; overflow-y: auto; }
+    .footer { margin-top: 12px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">Locus</div>
+    <a href="#" id="opt">Settings</a>
+  </div>
+
+  <div id="idle">
+    <h3>Start a session</h3>
+    <select id="activitySelect"></select>
+    <button class="primary" id="startBtn" style="width:100%">Start focus</button>
+  </div>
+
+  <div id="active" style="display:none">
+    <div class="card">
+      <div class="row between">
+        <div>
+          <div class="muted tiny">In session</div>
+          <div id="activeName" style="font-size:16px;font-weight:600"></div>
+        </div>
+        <div class="timer" id="timer">00:00</div>
+      </div>
+    </div>
+
+    <h3>Allowed</h3>
+    <div class="card allowed-list" id="allowedList"></div>
+
+    <button class="danger" id="stopBtn" style="width:100%">End session</button>
+  </div>
+
+  <div class="footer muted tiny">
+    Distractions get blocked. Override with the AI gatekeeper or your code.
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

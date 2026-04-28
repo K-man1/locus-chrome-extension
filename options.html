@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Locus — Settings</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { padding: 32px; max-width: 760px; margin: 0 auto; }
+    .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 28px; margin-bottom: 4px; }
+    .activity-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .activity-row input { flex: 1; }
+    .domains { margin-top: 8px; }
+    .add-domain { display: flex; gap: 6px; margin-top: 6px; }
+    .add-domain input { flex: 1; }
+    .small { padding: 4px 10px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="brand">Locus</div>
+  <p class="muted">v0.1 — manage activities, domains, and the override code.</p>
+
+  <h2>Activities</h2>
+  <p class="muted tiny">Each activity has its own whitelist. Everything else is blocked when the session is active.</p>
+  <div id="activities"></div>
+
+  <div class="row" style="margin-top:8px">
+    <input type="text" id="newActivityName" placeholder="New activity name (e.g. Essay writing)">
+    <button class="primary" id="addActivity">Add activity</button>
+  </div>
+
+  <hr>
+
+  <h2>Always allowed</h2>
+  <p class="muted tiny">Domains never blocked, regardless of which activity is active.</p>
+  <div class="card">
+    <div id="alwaysAllowedTags"></div>
+    <div class="add-domain">
+      <input type="text" id="newAlwaysAllowed" placeholder="docs.google.com">
+      <button id="addAlwaysAllowed">Add</button>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>Override code</h2>
+  <p class="muted tiny">Fallback escape hatch. Pick something tedious so future-you actually thinks before using it.</p>
+  <div class="card">
+    <input type="text" id="overrideCode" autocomplete="off">
+    <div class="row" style="margin-top: 8px;">
+      <button class="primary" id="saveOverride">Save</button>
+      <span id="overrideStatus" class="tiny muted"></span>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>Temporary allow duration</h2>
+  <div class="card">
+    <label>Minutes a granted site stays unlocked</label>
+    <input type="text" id="tempAllowMins">
+    <div class="row" style="margin-top: 8px;">
+      <button class="primary" id="saveTemp">Save</button>
+      <span id="tempStatus" class="tiny muted"></span>
+    </div>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>
