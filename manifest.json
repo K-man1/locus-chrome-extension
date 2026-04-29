@@ -1,15 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Locus",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Focus sessions with an AI gatekeeper. Block distracting sites; justify the ones you really need.",
   "permissions": [
     "storage",
     "tabs",
     "webNavigation",
     "alarms",
-    "scripting",
-    "notifications"
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"

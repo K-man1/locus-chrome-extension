@@ -1,5 +1,5 @@
-// Compact popup: idle → pick activity + task + start; active → timer +
-// editable task + end. Anything else is in the full dashboard tab.
+// Compact popup. Idle: task input + Start. Active: timer + editable task + End.
+// Anything else (settings, connectors, analytics, upcoming list) is in the dashboard tab.
 
 function send(msg) {
   return new Promise((res) => chrome.runtime.sendMessage(msg, res));
@@ -24,10 +24,10 @@ async function render() {
   if (state.session) {
     idle.style.display = "none";
     active.style.display = "block";
-    document.getElementById("activeName").textContent = state.session.activity;
-    document.getElementById("taskLine").textContent = state.session.task
-      ? `Task: ${state.session.task}` : "No specific task.";
-    document.getElementById("taskEdit").value = state.session.task || "";
+    const taskText = state.session.taskText || "";
+    document.getElementById("taskLine").textContent = taskText
+      ? `Task: ${taskText}` : "No specific task.";
+    document.getElementById("taskEdit").value = taskText;
 
     const startedAt = state.session.startedAt;
     const tick = () => {
@@ -37,7 +37,6 @@ async function render() {
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(tick, 1000);
 
-    // Tiny block-since-start summary.
     const events = (state.analytics?.events) || [];
     let attempts = 0, approved = 0;
     for (const ev of events) {
@@ -53,33 +52,24 @@ async function render() {
     idle.style.display = "block";
     active.style.display = "none";
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-
-    const sel = document.getElementById("activitySelect");
-    sel.innerHTML = "";
-    const names = Object.keys(state.activities || {});
-    if (names.length === 0) {
-      const opt = document.createElement("option");
-      opt.textContent = "(no activities — open Dashboard)";
-      opt.disabled = true;
-      sel.appendChild(opt);
-      document.getElementById("startBtn").disabled = true;
-    } else {
-      for (const n of names) {
-        const opt = document.createElement("option");
-        opt.value = n; opt.textContent = n;
-        sel.appendChild(opt);
-      }
-      document.getElementById("startBtn").disabled = false;
-    }
+    const inp = document.getElementById("taskInput");
+    if (inp && document.activeElement !== inp) inp.focus();
   }
 }
 
-document.getElementById("startBtn").addEventListener("click", async () => {
-  const sel = document.getElementById("activitySelect");
-  if (!sel.value) return;
-  const task = document.getElementById("taskInput").value.trim();
-  await send({ type: "startSession", activity: sel.value, task });
+async function startSession() {
+  const taskText = document.getElementById("taskInput").value.trim();
+  if (!taskText) {
+    document.getElementById("taskInput").focus();
+    return;
+  }
+  await send({ type: "startSession", taskText, source: "manual" });
   await render();
+}
+
+document.getElementById("startBtn").addEventListener("click", startSession);
+document.getElementById("taskInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") startSession();
 });
 
 document.getElementById("stopBtn").addEventListener("click", async () => {
@@ -88,16 +78,18 @@ document.getElementById("stopBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("saveTask").addEventListener("click", async () => {
-  const v = document.getElementById("taskEdit").value;
-  await send({ type: "updateTask", task: v });
+  const v = document.getElementById("taskEdit").value.trim();
+  if (!v) return;
+  await send({ type: "updateTask", taskText: v });
   await render();
 });
 
 function openDashboard(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   chrome.runtime.openOptionsPage();
 }
 document.getElementById("openDash").addEventListener("click", openDashboard);
-document.getElementById("openDash2").addEventListener("click", openDashboard);
+const upLink = document.getElementById("openDashUpcoming");
+if (upLink) upLink.addEventListener("click", openDashboard);
 
 render();

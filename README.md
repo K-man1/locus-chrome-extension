@@ -1,37 +1,39 @@
 # Locus — Chrome Extension
 
-A focus extension. You define activities (e.g. "Math homework") with a domain whitelist; while a session is active, every other site is blocked. Try to visit a blocked site and an AI gatekeeper asks why you need it. Plausible reasons get a temporary pass; bad ones don't.
+A focus extension. Type what you're working on (or click an upcoming calendar event), and every site that isn't on your always-allowed list is blocked. Try to visit a blocked page and an AI gatekeeper asks why you need it. Plausible reasons get a temporary pass; bad ones don't.
 
-Ports the macOS Locus app's core loop to Chrome (Manifest V3).
-dsfsdf
+Mirrors the macOS Locus app's UI — sidebar with **Start / Settings / Connectors / Analytics**, a single task input, and a list of upcoming calendar events you can click to start a session.
+
 ## Install (developer mode)
 
 1. Open `chrome://extensions`.
 2. Toggle **Developer mode** (top right).
 3. **Load unpacked** → select this directory.
 4. Pin Locus from the puzzle-piece menu so the popup is one click away.
-5. The popup shows only Start/Stop. Click **Dashboard** (top right of the popup) for activities, calendar, analytics, and settings — or right-click the icon → **Options**.
+5. The popup is compact — type a task, hit Start. Click **Open dashboard** at the bottom for the full Start / Settings / Connectors / Analytics view.
 
 ## How it works
 
-- **Background service worker** watches `chrome.webNavigation` and redirects blocked URLs to an internal `blocked.html` page.
-- The blocked page asks the AI gatekeeper if the bare site is obviously relevant (auto-allow). If it isn't, the user types a reason and the AI decides.
+- A focus session is just a free-form task string — typed manually or pulled from a calendar event title.
+- While a session is active, every site is blocked **except** the **Always-allowed** domains in Settings.
+- The blocked page asks the AI gatekeeper if the bare site is obviously relevant to the task (auto-allow). If not, the user types a reason and the AI decides.
 - Approvals grant a temporary allow stored in `chrome.storage.local` (default: 10 minutes).
 - The override code is a fallback escape hatch — set it to something tedious so future-you thinks twice.
 
 ## UI surfaces
 
-- **Popup** (`popup.html`) — small, fast. Pick activity + task → Start. While active: timer, current task (editable inline), End session.
-- **Dashboard** (`dashboard.html`) — full browser tab. Five sections via top-tab nav:
-  - **Activities** — create/edit/delete activities, manage per-activity domain whitelists, plus an "Always allowed" list.
-  - **Calendar** — manage iCal feeds, define keyword→activity mappings, manual "Sync now," view upcoming auto-starts.
-  - **Analytics** — focus minutes, streak, blocking stats, 14-day series, by-activity breakdown, top blocked domains.
-  - **Settings** — temp-allow duration, harshness, drift detection on/off + interval, sound on block, theme, override code, and an Advanced collapsible with the three editable AI prompts.
-  - **About** — version, link, brief feature summary.
+- **Popup** (`popup.html`) — compact. Idle: lock icon, "Locus", task input, Start Session. Active: timer, current task (editable), End Session.
+- **Dashboard** (`dashboard.html`) — full browser tab with a 200px sidebar:
+  - **Start** — big lock icon, task input, Start Session, "OR" divider, **UPCOMING** list of calendar events grouped by day. Click any event to start a session with that event's title as the task.
+  - **Settings** — Always-allowed domains, override code, temp-allow duration, harshness, drift on/off + interval, sound on block, theme. Advanced collapsible exposes the three AI prompts.
+  - **Connectors** — iCal feeds CRUD plus a manual Sync now.
+  - **Analytics** — focus minutes, streak, blocking stats, 14-day bar chart, top blocked domains.
 
 ## Calendar (iCal feeds)
 
-Locus subscribes to one or more `.ics` URLs the user pastes in (each entry is `{name, url}`). On a 30-minute alarm (and on demand), the extension does a plain `fetch()` of each feed, parses it inline, and expands recurring events for the next ~14 days. Event titles are matched (case-insensitive substring) against keyword→activity mappings; matched entries with `auto-start` schedule a `chrome.alarms` call to start the corresponding session at the event's start time.
+Locus subscribes to one or more `.ics` URLs (each entry is `{name, url}`). On a 30-minute alarm (and on demand from the Connectors pane), the extension does a plain `fetch()` of each feed, parses it inline, and expands recurring events for the next ~14 days. The Start pane shows them grouped by day with headers ("TODAY", "TOMORROW", "THU APR 30"). Click an event to start a session with `taskText = "<event title> (<feed name>)"`.
+
+Sessions are **never** auto-started — the user always picks.
 
 Supported feed sources include:
 
@@ -46,20 +48,20 @@ The inline parser is intentionally minimal (~250 lines, no external libraries):
 - VEVENT only.
 - DTSTART / DTEND / SUMMARY / DESCRIPTION / LOCATION / UID / RRULE / EXDATE.
 - RRULE expansion handles `FREQ=DAILY` and `FREQ=WEEKLY` with optional `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY`. `MONTHLY`/`YEARLY` events surface only their first instance.
-- Folded lines are unfolded; UTC `Z` and floating times are honored. TZID values are treated as local wall-clock — close enough for auto-start.
+- Folded lines are unfolded; UTC `Z` and floating times are honored. TZID values are treated as local wall-clock.
 
 ### CORS caveat
 
-`fetch()` from a Chrome extension hits CORS on a few iCal hosts. Most public/secret iCal endpoints (Google, iCloud, Schoology, Canvas) reply with `Access-Control-Allow-Origin: *` and work fine. If a feed fails, the dashboard shows the error per-feed; switch to a different export URL or a different provider.
+`fetch()` from a Chrome extension hits CORS on a few iCal hosts. Most public/secret iCal endpoints (Google, iCloud, Schoology, Canvas) reply with `Access-Control-Allow-Origin: *` and work fine. If a feed fails, the Connectors pane shows the per-feed error.
 
 ## Features
 
-- **Per-session task.** When starting a session, type one line about what you're working on. Passed into every AI prompt as additional context. Editable mid-session from the popup.
+- **Free-form task as session.** No pre-defined activities; just type what you're working on. The string is passed into every AI prompt as the entire context. Editable mid-session.
 - **Smart re-blocking.** While a temp-allow is active, the background polls each tab's title every ~15s and asks the AI whether you're drifting. If you are, the temp-allow is revoked and you're sent back to the blocked page with the AI's drift reason.
-- **Tightened denial UX.** When the AI denies a request, the textarea is replaced by a denial card showing the reason. Refreshing the same tab keeps the denial in place; closing the tab or navigating to a different domain clears it.
-- **Analytics.** Local-only event log. Focus minutes today/week, streak, sessions, block attempts, AI approvals/denials, drift revocations, top blocked domains, 14-day bar chart, and per-activity breakdown.
-- **iCal calendar import.** No OAuth, no Notion. Just paste an `.ics` URL.
-- **Settings parity** with the macOS app: temp-allow duration, harshness (Lenient / Standard / Strict), sound on block, theme (light/dark/system), and an Advanced section to override the three AI prompts (`evaluate_reason`, `evaluate_site_relevance`, `evaluate_title`).
+- **Tightened denial UX.** When the AI denies a request, the textarea is replaced by a denial card. Refreshing the same tab keeps the denial; closing it or navigating to a different domain clears it.
+- **Analytics.** Local-only event log. Focus minutes today/week, streak, sessions, block attempts, AI approvals/denials, drift revocations, top blocked domains, 14-day bar chart.
+- **iCal calendar import.** No OAuth. Just paste an `.ics` URL per feed.
+- **Settings parity** with the macOS app: always-allowed domains, temp-allow duration, harshness (Lenient / Standard / Strict), sound on block, theme (light/dark/system), and an Advanced section to override the three AI prompts (`evaluate_reason`, `evaluate_site_relevance`, `evaluate_title`). Templates support `{task}`, `{domain}`, `{reason}`, `{titleHint}`, `{tabTitle}`, `{harshness}`.
 
 ## AI proxy
 
@@ -68,26 +70,23 @@ All AI calls go to `https://locus-proxy.locus-proxy.workers.dev/`. The Cloudflar
 ## Files
 
 - `manifest.json` — MV3 manifest
-- `background.js` — service worker (navigation, drift sweep, calendar alarms, analytics, denial locks)
-- `popup.html / popup.js` — compact pinned-icon popup (Session only)
-- `dashboard.html / dashboard.js` — full-tab dashboard (Activities, Calendar, Analytics, Settings, About)
+- `background.js` — service worker (navigation, drift sweep, calendar sync, analytics, denial locks)
+- `popup.html / popup.js` — compact popup matching the Start pane
+- `dashboard.html / dashboard.js` — full-tab dashboard (sidebar: Start / Settings / Connectors / Analytics)
 - `blocked.html / blocked.js` — gatekeeper page with denial-lock UX
-- `lib/storage.js` — schema + helpers
+- `lib/storage.js` — schema + helpers + legacy migration
 - `lib/ai.js` — worker client + prompt templates
 - `lib/analytics.js` — event log + summary
-- `lib/calendar.js` — iCal fetch + inline parser + RRULE expansion + mapping
+- `lib/calendar.js` — iCal fetch + inline parser + RRULE expansion
 - `lib/theme.js` — theme bootstrap
 
 ## Permissions
 
-`storage`, `tabs`, `webNavigation`, `alarms`, `scripting`, `notifications`, plus `<all_urls>` host permission. (No `identity` permission anymore — calendar is iCal, not OAuth.)
+`storage`, `tabs`, `webNavigation`, `alarms`, `scripting`, `notifications`, plus `<all_urls>` host permission.
 
-## Not implemented (and why)
+## Migrating from earlier versions
 
-- **Smart App Blocking** — extensions can't kill native apps; macOS-only.
-- **Notion connector** — intentionally skipped.
-- **Safari/Firefox** — out of scope.
-- **Complex RRULE patterns** (monthly-by-weekday, BYMONTH, BYSETPOS) — surface only the first occurrence. Handles the common "every Tuesday" / "every weekday" cases that cover ~99% of real schedules.
+If you used Locus before activities were removed, the extension drops the old `activities` map and calendar `mappings` on first load and rewrites any `{activity}` placeholder in stored prompt overrides to `{task}`. Domains you previously had on per-activity whitelists are not auto-migrated — re-add the ones you want to **Always allowed** in Settings.
 
 ## Limitations
 

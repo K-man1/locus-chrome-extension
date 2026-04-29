@@ -1,13 +1,13 @@
 const params = new URLSearchParams(location.search);
 const blockedUrl = params.get("url") || "";
 const host = params.get("host") || "";
-const session = params.get("session") || "";
+const taskParam = params.get("task") || "";
 const driftReason = params.get("drift") || "";
 const startedDenied = params.get("denied") === "1";
 
 document.getElementById("urlBox").textContent = blockedUrl || "(unknown)";
-document.getElementById("sessionName").textContent = session || "your session";
-document.getElementById("sessionTag").textContent = session ? `Session · ${session}` : "Focus session";
+document.getElementById("taskName").textContent = taskParam || "your task";
+document.getElementById("sessionTag").textContent = taskParam ? `Task · ${taskParam}` : "Focus session";
 
 if (driftReason) {
   const box = document.getElementById("driftBox");
@@ -25,7 +25,7 @@ function setStatus(el, html) { el.innerHTML = html; }
 function showLocked(reason) {
   document.getElementById("askBox").hidden = true;
   document.getElementById("lockedBox").hidden = false;
-  document.getElementById("lockedReason").textContent = reason || "Not relevant to the current session.";
+  document.getElementById("lockedReason").textContent = reason || "Not relevant to the current task.";
 }
 
 async function proceed() {
@@ -33,12 +33,11 @@ async function proceed() {
   location.replace(blockedUrl);
 }
 
-// Show task & maybe play sound on block, then auto-evaluate site.
 (async () => {
   const state = await send({ type: "getState" });
   const taskLine = document.getElementById("taskLine");
-  if (state?.session?.task) {
-    taskLine.textContent = `Working on: ${state.session.task}.`;
+  if (state?.session?.taskText) {
+    taskLine.textContent = `If you really need this page, tell the AI why.`;
   } else {
     taskLine.textContent = "If you really need this page, tell the AI why.";
   }
@@ -46,7 +45,6 @@ async function proceed() {
   if (state?.playSoundOnBlock) playBlockSound();
 
   if (startedDenied) {
-    // The denial-lock for this tab is already set. Show locked UI immediately.
     showLocked("The AI denied a previous request for this site in this tab.");
     return;
   }
@@ -105,7 +103,6 @@ function escapeHtml(s) {
   }[c]));
 }
 
-// A short synthesized "thunk" via WebAudio — no asset needed, no base64 bloat.
 function playBlockSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();

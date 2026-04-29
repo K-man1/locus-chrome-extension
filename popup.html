@@ -6,39 +6,62 @@
   <link rel="stylesheet" href="styles.css">
   <script src="lib/theme.js"></script>
   <style>
-    body { width: 360px; padding: 14px; max-height: 500px; overflow-y: auto; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .header .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 20px; }
-    .timer { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 30px; color: var(--ink); }
-    select { margin-bottom: 8px; }
-    .task-line { font-size: 12px; color: var(--ink-soft); margin-top: 4px; word-break: break-word; }
-    .task-edit { display: flex; gap: 6px; margin-top: 6px; }
+    body { width: 320px; padding: 18px 16px; max-height: 520px; overflow-y: auto; }
+    .lock-icon {
+      width: 44px; height: 44px; margin: 0 auto 6px;
+      border: 1.5px solid var(--ink); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ink);
+    }
+    .lock-icon svg { width: 22px; height: 22px; }
+    .brand-block { text-align: center; margin-bottom: 14px; }
+    .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 22px; }
+    .subtitle { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+    .label-uc { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+    .timer { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 28px; color: var(--ink); text-align: center; }
+    .task-line { font-size: 13px; color: var(--ink); margin-top: 6px; word-break: break-word; text-align: center; }
+    .task-edit { display: flex; gap: 6px; margin-top: 8px; }
     .task-edit input { flex: 1; }
-    .footer { margin-top: 12px; font-size: 12px; text-align: center; }
-    .session-summary { margin-top: 8px; font-size: 11px; color: var(--ink-soft); }
-    .activity-name { font-size: 14px; color: var(--ink-soft); margin-top: 4px; }
-    .timer-block { text-align: center; padding: 10px 0 4px; }
+    .footer { margin-top: 14px; font-size: 12px; text-align: center; }
+    .session-summary { margin-top: 8px; font-size: 11px; color: var(--ink-soft); text-align: center; }
+    .timer-block { text-align: center; padding: 6px 0 4px; }
+    .start-btn { width: 100%; margin-top: 10px; padding: 10px; font-size: 14px; font-weight: 600; }
+    .start-btn .play { margin-right: 4px; }
+    .or-link { display: block; text-align: center; margin-top: 10px; font-size: 11px; color: var(--ink-soft); }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="brand">Locus</div>
-    <a href="#" id="openDash" class="tiny">Dashboard</a>
-  </div>
-
   <div id="idle">
-    <label for="activitySelect">Activity</label>
-    <select id="activitySelect"></select>
-    <label for="taskInput" style="margin-top:6px">What are you working on?</label>
-    <input type="text" id="taskInput" placeholder="e.g. Finish chapter 4 problems">
-    <button class="primary" id="startBtn" style="width:100%; margin-top:10px">Start focus</button>
+    <div class="brand-block">
+      <div class="lock-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+          <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+        </svg>
+      </div>
+      <div class="brand">Locus</div>
+      <div class="subtitle">What do you want to focus on?</div>
+    </div>
+
+    <div class="label-uc">What are you working on?</div>
+    <input type="text" id="taskInput" placeholder="e.g. Write essay intro" autofocus>
+    <button class="primary start-btn" id="startBtn"><span class="play">▶</span> Start Session</button>
+    <a href="#" id="openDashUpcoming" class="or-link">OR pick from calendar →</a>
   </div>
 
   <div id="active" style="display:none">
+    <div class="brand-block">
+      <div class="lock-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+          <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+        </svg>
+      </div>
+      <div class="brand">Locus</div>
+    </div>
     <div class="card">
       <div class="timer-block">
         <div class="timer" id="timer">00:00</div>
-        <div class="activity-name" id="activeName"></div>
       </div>
       <div class="task-line" id="taskLine"></div>
       <div class="task-edit">
@@ -47,11 +70,11 @@
       </div>
       <div class="session-summary" id="sessionSummary"></div>
     </div>
-    <button class="danger" id="stopBtn" style="width:100%">End session</button>
+    <button class="danger" id="stopBtn" style="width:100%">End Session</button>
   </div>
 
   <div class="footer">
-    <a href="#" id="openDash2">Open dashboard</a>
+    <a href="#" id="openDash">Open dashboard</a>
   </div>
 
   <script src="popup.js" type="module"></script>

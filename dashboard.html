@@ -2,252 +2,374 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Locus — Dashboard</title>
+  <title>Locus</title>
   <link rel="stylesheet" href="styles.css">
   <script src="lib/theme.js"></script>
   <style>
-    body { padding: 0; margin: 0; }
-    .page { max-width: 960px; margin: 0 auto; padding: 28px 28px 60px; }
-    .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
-    .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 30px; }
-    .nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 18px 0 22px; flex-wrap: wrap; }
-    .nav button {
-      background: transparent; border: 0; border-bottom: 2px solid transparent;
-      padding: 10px 14px; border-radius: 0; color: var(--ink-soft); font-weight: 500;
+    body { padding: 0; margin: 0; min-height: 100vh; }
+    .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      padding: 18px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
-    .nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
-    .nav button:hover { background: transparent; color: var(--ink); }
+    .side-brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 4px 10px 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .side-brand .lock-mini {
+      width: 26px; height: 26px;
+      border: 1.5px solid var(--ink); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .side-brand .lock-mini svg { width: 14px; height: 14px; }
+    .side-brand .wordmark { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 22px; }
+    .side-nav button {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; text-align: left;
+      background: transparent; border: 1px solid transparent;
+      padding: 9px 12px; border-radius: 8px;
+      color: var(--ink-soft); font-weight: 500;
+    }
+    .side-nav button:hover { background: var(--accent-soft); color: var(--ink); }
+    .side-nav button.active { background: var(--accent-soft); color: var(--ink); border-color: var(--border); font-weight: 600; }
+    .side-nav .nav-icon { width: 16px; height: 16px; flex: none; }
+
+    /* Main */
+    .main { padding: 36px 40px 60px; max-width: 760px; }
     .pane { display: none; }
     .pane.active { display: block; }
+
+    /* Start pane */
+    .start-hero { text-align: center; margin: 8px 0 28px; }
+    .start-hero .lock-big {
+      width: 86px; height: 86px;
+      border: 2px solid var(--ink); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .start-hero .lock-big svg { width: 42px; height: 42px; }
+    .start-hero .wordmark {
+      font-family: "Iowan Old Style", Palatino, Georgia, serif;
+      font-size: 38px; line-height: 1; margin-bottom: 8px;
+    }
+    .start-hero .subtitle { color: var(--ink-soft); font-size: 14px; }
+
+    .label-uc {
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ink-soft); margin: 14px 0 8px;
+    }
+    .start-input { width: 100%; padding: 12px 14px; font-size: 15px; }
+    .start-btn-big {
+      width: 100%; margin-top: 12px; padding: 12px 14px;
+      font-size: 15px; font-weight: 600;
+    }
+    .start-btn-big .play { margin-right: 6px; }
+
+    .or-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 26px 0 18px;
+      color: var(--ink-soft); font-size: 11px; letter-spacing: 0.14em;
+    }
+    .or-divider::before, .or-divider::after {
+      content: ""; flex: 1; border-top: 1px solid var(--border);
+    }
+
+    /* Upcoming list */
+    .upcoming-empty { color: var(--ink-soft); font-size: 13px; padding: 12px; }
+    .day-group { margin-bottom: 18px; }
+    .day-header {
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ink-soft); margin-bottom: 8px;
+    }
+    .event-card {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+      cursor: pointer; transition: border-color 0.12s, transform 0.05s;
+    }
+    .event-card:hover { border-color: var(--accent); }
+    .event-card:active { transform: scale(0.997); }
+    .event-icon {
+      flex: none; width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ink-soft);
+    }
+    .event-icon svg { width: 22px; height: 22px; }
+    .event-body { flex: 1; min-width: 0; }
+    .event-title { font-weight: 600; color: var(--ink); margin-bottom: 2px; word-break: break-word; }
+    .event-sub { color: var(--ink-soft); font-size: 12px; }
+    .event-time { color: var(--ink-soft); font-size: 11px; flex: none; padding-top: 2px; }
+
+    /* Active session block on Start pane */
+    .active-session {
+      text-align: center; padding: 22px 0;
+    }
+    .active-session .timer-big {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 44px; color: var(--ink); margin: 14px 0 6px;
+    }
+    .active-session .task-line { color: var(--ink); font-size: 16px; margin-bottom: 14px; }
+    .active-session .task-edit { display: flex; gap: 8px; max-width: 420px; margin: 0 auto 14px; }
+    .active-session .task-edit input { flex: 1; }
+
+    /* Settings / Connectors / Analytics shared bits */
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
     .field { display: flex; flex-direction: column; }
     textarea.prompt { min-height: 160px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
-    .map-row { display: grid; grid-template-columns: 2fr 1.5fr auto auto; gap: 8px; align-items: center; margin-bottom: 6px; }
     .feed-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
-    .activity-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .activity-row input { flex: 1; }
-    .domains { margin-top: 8px; }
-    .add-domain { display: flex; gap: 6px; margin-top: 6px; }
-    .add-domain input { flex: 1; }
-    .small { padding: 4px 10px; font-size: 12px; }
-    section h2 { margin-top: 4px; }
     .stat-card { padding: 14px; }
     .stat-card .num { font-size: 26px; font-family: "Iowan Old Style", Palatino, Georgia, serif; }
     .stat-card .lbl { font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; }
     .bar-row { margin: 4px 0; }
     .bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); }
-    .bar { background: #fff; border: 1px solid var(--border); border-radius: 4px; height: 10px; overflow: hidden; }
+    .bar { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; height: 10px; overflow: hidden; }
     .bar-fill { background: var(--accent); height: 100%; }
     .stat { display: flex; justify-content: space-between; padding: 4px 0; }
     .stat .v { font-weight: 600; }
     .feed-error { color: var(--danger); font-size: 12px; margin-top: 6px; }
-    .upcoming-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border); }
-    .upcoming-row:last-child { border-bottom: 0; }
-    .badge { display: inline-block; background: var(--accent-soft); border: 1px solid var(--border); color: #6e4d0a; padding: 1px 8px; border-radius: 999px; font-size: 11px; }
+    .small { padding: 4px 10px; font-size: 12px; }
+    .empty-hint { color: var(--ink-soft); font-size: 13px; }
+    .empty-hint a { color: var(--accent); cursor: pointer; }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="topbar">
-      <div class="brand">Locus</div>
-      <div class="muted tiny">v0.3 · local-first focus sessions</div>
-    </div>
-    <p class="muted">Dashboard for activities, calendar, analytics, and settings.</p>
-
-    <nav class="nav">
-      <button data-pane="activities" class="active">Activities</button>
-      <button data-pane="calendar">Calendar</button>
-      <button data-pane="analytics">Analytics</button>
-      <button data-pane="settings">Settings</button>
-      <button data-pane="about">About</button>
-    </nav>
-
-    <!-- ── Activities ─────────────────────────────────────────────── -->
-    <section id="pane-activities" class="pane active">
-      <h2>Activities</h2>
-      <p class="muted tiny">Each activity has its own whitelist. Everything else is blocked when the session is active.</p>
-      <div id="activities"></div>
-      <div class="row" style="margin-top:8px">
-        <input type="text" id="newActivityName" placeholder="New activity name (e.g. Essay writing)">
-        <button class="primary" id="addActivity">Add activity</button>
-      </div>
-
-      <hr>
-
-      <h2>Always allowed</h2>
-      <p class="muted tiny">Domains never blocked, regardless of which activity is active.</p>
-      <div class="card">
-        <div id="alwaysAllowedTags"></div>
-        <div class="add-domain">
-          <input type="text" id="newAlwaysAllowed" placeholder="docs.google.com">
-          <button id="addAlwaysAllowed">Add</button>
+  <div class="layout">
+    <!-- ── Sidebar ─────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="side-brand">
+        <div class="lock-mini">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+          </svg>
         </div>
+        <div class="wordmark">Locus</div>
       </div>
-    </section>
+      <nav class="side-nav">
+        <button data-pane="start" class="active">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"></polygon></svg>
+          <span>Start</span>
+        </button>
+        <button data-pane="settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Settings</span>
+        </button>
+        <button data-pane="connectors">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3,17 9,11 13,15 21,7"></polyline>
+            <polyline points="14,7 21,7 21,14"></polyline>
+          </svg>
+          <span>Connectors</span>
+        </button>
+        <button data-pane="analytics">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="20" x2="6" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="18" y1="20" x2="18" y2="14"></line>
+          </svg>
+          <span>Analytics</span>
+        </button>
+      </nav>
+    </aside>
 
-    <!-- ── Calendar ──────────────────────────────────────────────── -->
-    <section id="pane-calendar" class="pane">
-      <h2>iCal feeds</h2>
-      <p class="muted tiny">Paste any public or "secret" iCal/.ics URL — Google Calendar's secret address, iCloud, Outlook, Schoology, Canvas. Locus refreshes every 30 minutes.</p>
-      <div class="card">
-        <div id="feeds"></div>
-        <div class="feed-row" style="margin-top:8px">
-          <input type="text" id="newFeedName" placeholder="Name (e.g. School)">
-          <input type="text" id="newFeedUrl" placeholder="https://… .ics">
-          <button id="addFeed">Add</button>
+    <!-- ── Main ────────────────────────────────────────────────── -->
+    <main class="main">
+      <!-- Start pane -->
+      <section id="pane-start" class="pane active">
+        <div id="startIdle">
+          <div class="start-hero">
+            <div class="lock-big">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+              </svg>
+            </div>
+            <div class="wordmark">Locus</div>
+            <div class="subtitle">What do you want to focus on?</div>
+          </div>
+
+          <div class="label-uc">What are you working on?</div>
+          <input type="text" id="startTaskInput" class="start-input" placeholder="e.g. Write essay intro" autofocus>
+          <button class="primary start-btn-big" id="startSessionBtn"><span class="play">▶</span> Start Session</button>
+
+          <div class="or-divider">OR</div>
+
+          <div class="label-uc">Upcoming</div>
+          <div id="upcomingList" class="upcoming-empty">Loading…</div>
         </div>
-        <div class="row" style="margin-top:10px; gap: 8px">
-          <button id="calSync">Sync now</button>
-          <span id="calStatus" class="muted tiny"></span>
-        </div>
-        <div id="feedErrors"></div>
-      </div>
 
-      <h2 style="margin-top:18px">Keyword → activity mappings</h2>
-      <p class="muted tiny">When an event title contains a keyword (case-insensitive substring), start the matching activity. Toggle "auto-start" to actually launch sessions automatically at the event's start time.</p>
-      <div class="card">
-        <div id="calMappings"></div>
-        <div class="map-row" style="margin-top:8px">
-          <input type="text" id="newMapKeyword" placeholder="Title keyword (e.g. Math)">
-          <select id="newMapActivity"></select>
-          <label class="tiny" style="margin:0"><input type="checkbox" id="newMapAutoStart" checked> auto-start</label>
-          <button id="addMapping">Add</button>
-        </div>
-      </div>
-
-      <h2 style="margin-top:18px">Upcoming auto-starts (next 14 days)</h2>
-      <div class="card">
-        <div id="calUpcoming" class="muted tiny">—</div>
-      </div>
-    </section>
-
-    <!-- ── Analytics ─────────────────────────────────────────────── -->
-    <section id="pane-analytics" class="pane">
-      <h2>Focus</h2>
-      <div class="grid3">
-        <div class="card stat-card"><div class="lbl">Today</div><div class="num" id="focusToday">—</div></div>
-        <div class="card stat-card"><div class="lbl">This week</div><div class="num" id="focusWeek">—</div></div>
-        <div class="card stat-card"><div class="lbl">Streak</div><div class="num" id="streak">—</div></div>
-      </div>
-
-      <h2 style="margin-top:18px">Blocking</h2>
-      <div class="grid3">
-        <div class="card stat-card"><div class="lbl">Attempts</div><div class="num" id="blockAttempts">—</div></div>
-        <div class="card stat-card"><div class="lbl">AI approved</div><div class="num" id="blockApproved">—</div></div>
-        <div class="card stat-card"><div class="lbl">AI denied</div><div class="num" id="blockDenied">—</div></div>
-      </div>
-      <div class="card">
-        <div class="stat"><span>Drift revocations</span><span class="v" id="driftRevoked">—</span></div>
-        <div class="stat"><span>Sessions today</span><span class="v" id="sessionsToday">—</span></div>
-      </div>
-
-      <h2 style="margin-top:18px">Last 14 days</h2>
-      <div class="card"><div id="dailyBars"></div></div>
-
-      <h2 style="margin-top:18px">By activity (last 14 days)</h2>
-      <div class="card"><div id="byActivity" class="muted tiny">—</div></div>
-
-      <h2 style="margin-top:18px">Top blocked domains</h2>
-      <div class="card"><div id="topDomains" class="muted tiny">—</div></div>
-
-      <div class="row" style="margin-top:8px">
-        <button class="danger small" id="clearAnalytics">Clear analytics history</button>
-        <span id="clearStatus" class="tiny muted"></span>
-      </div>
-    </section>
-
-    <!-- ── Settings ──────────────────────────────────────────────── -->
-    <section id="pane-settings" class="pane">
-      <h2>General</h2>
-      <div class="card">
-        <div class="grid2">
-          <div class="field">
-            <label>Theme</label>
-            <select id="theme">
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
+        <div id="startActive" style="display:none">
+          <div class="start-hero">
+            <div class="lock-big">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+              </svg>
+            </div>
+            <div class="wordmark">Locus</div>
+            <div class="subtitle">In a focus session</div>
           </div>
-          <div class="field">
-            <label>Harshness</label>
-            <select id="harshness">
-              <option>Lenient</option>
-              <option>Standard</option>
-              <option>Strict</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Temporary allow duration (minutes)</label>
-            <input type="text" id="tempAllowMins">
-          </div>
-          <div class="field">
-            <label>Drift check interval (seconds)</label>
-            <input type="text" id="driftSeconds">
-          </div>
-          <div class="field">
-            <label><input type="checkbox" id="playSoundOnBlock"> Play a sound on block</label>
-          </div>
-          <div class="field">
-            <label><input type="checkbox" id="driftCheckEnabled"> Enable smart re-blocking (drift detection)</label>
+          <div class="active-session">
+            <div class="timer-big" id="activeTimer">00:00</div>
+            <div class="task-line" id="activeTaskLine"></div>
+            <div class="task-edit">
+              <input type="text" id="activeTaskEdit">
+              <button id="activeSaveTask">Save</button>
+            </div>
+            <button class="danger" id="activeEndBtn">End Session</button>
+            <div class="muted tiny" id="activeSummary" style="margin-top:10px"></div>
           </div>
         </div>
-        <div class="row" style="margin-top: 10px;">
-          <button class="primary" id="saveGeneral">Save</button>
-          <span id="generalStatus" class="tiny muted"></span>
-        </div>
-      </div>
+      </section>
 
-      <h2 style="margin-top:18px">Override code</h2>
-      <p class="muted tiny">Fallback escape hatch. Pick something tedious so future-you actually thinks before using it.</p>
-      <div class="card">
-        <input type="text" id="overrideCode" autocomplete="off">
-        <div class="row" style="margin-top: 8px;">
-          <button class="primary" id="saveOverride">Save</button>
-          <span id="overrideStatus" class="tiny muted"></span>
-        </div>
-      </div>
-
-      <details style="margin-top:18px">
-        <summary><h2 style="display:inline-block; margin:0">Advanced — AI prompts</h2></summary>
-        <p class="muted tiny">Override the prompts sent to the AI. Leave blank to use the default. Templates support {session}, {task}, {domain}, {reason}, {titleHint}, {tabTitle}, {harshness}.</p>
+      <!-- Settings pane -->
+      <section id="pane-settings" class="pane">
+        <h2>Always-allowed domains</h2>
+        <p class="muted tiny">Domains never blocked. Everything else is blocked while a session is active. One per line.</p>
         <div class="card">
-          <label>evaluate_reason — when the user types a reason on the blocked page</label>
-          <textarea class="prompt" id="promptReason" placeholder="(default)"></textarea>
+          <textarea id="alwaysAllowedText" rows="6" placeholder="docs.google.com&#10;khanacademy.org"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="primary" id="saveAlwaysAllowed">Save</button>
+            <span id="alwaysAllowedStatus" class="tiny muted"></span>
+          </div>
         </div>
-        <div class="card">
-          <label>evaluate_site_relevance — auto-allow check on bare domain</label>
-          <textarea class="prompt" id="promptSite" placeholder="(default)"></textarea>
-        </div>
-        <div class="card">
-          <label>evaluate_title — drift detection on temp-allowed pages</label>
-          <textarea class="prompt" id="promptTitle" placeholder="(default)"></textarea>
-        </div>
-        <div class="row">
-          <button class="primary" id="savePrompts">Save prompts</button>
-          <button id="resetPrompts">Reset to defaults</button>
-          <span id="promptStatus" class="tiny muted"></span>
-        </div>
-      </details>
-    </section>
 
-    <!-- ── About ─────────────────────────────────────────────────── -->
-    <section id="pane-about" class="pane">
-      <h2>About Locus</h2>
-      <div class="card">
-        <p>Locus is a Manifest V3 Chrome extension. You define activities with a domain whitelist; while a session is active, every other site is blocked. An AI gatekeeper decides whether your reasons for breaking focus are plausible.</p>
-        <p class="muted tiny">Version 0.3 · No tracking, no telemetry. All analytics are local.</p>
-        <ul class="muted tiny">
-          <li>Per-session task — passed into AI prompts as context.</li>
-          <li>Smart re-blocking via title-based drift detection.</li>
-          <li>Tightened denial UX (denial locks per tab).</li>
-          <li>iCal calendar import (Google secret address, iCloud, Outlook, Schoology, Canvas).</li>
-          <li>Local analytics: 14-day series, streaks, top blocked domains.</li>
-        </ul>
-        <p class="tiny"><a href="https://github.com/" target="_blank" rel="noopener">GitHub</a></p>
-      </div>
-    </section>
+        <h2 style="margin-top:18px">General</h2>
+        <div class="card">
+          <div class="grid2">
+            <div class="field">
+              <label>Theme</label>
+              <select id="theme">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Harshness</label>
+              <select id="harshness">
+                <option>Lenient</option>
+                <option>Standard</option>
+                <option>Strict</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Temporary allow duration (minutes)</label>
+              <input type="text" id="tempAllowMins">
+            </div>
+            <div class="field">
+              <label>Drift check interval (seconds)</label>
+              <input type="text" id="driftSeconds">
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="playSoundOnBlock"> Play a sound on block</label>
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="driftCheckEnabled"> Enable smart re-blocking (drift detection)</label>
+            </div>
+          </div>
+          <div class="row" style="margin-top: 10px;">
+            <button class="primary" id="saveGeneral">Save</button>
+            <span id="generalStatus" class="tiny muted"></span>
+          </div>
+        </div>
+
+        <h2 style="margin-top:18px">Override code</h2>
+        <p class="muted tiny">Fallback escape hatch. Pick something tedious so future-you actually thinks before using it.</p>
+        <div class="card">
+          <input type="text" id="overrideCode" autocomplete="off">
+          <div class="row" style="margin-top: 8px;">
+            <button class="primary" id="saveOverride">Save</button>
+            <span id="overrideStatus" class="tiny muted"></span>
+          </div>
+        </div>
+
+        <details style="margin-top:18px">
+          <summary><h2 style="display:inline-block; margin:0">Advanced — AI prompts</h2></summary>
+          <p class="muted tiny">Override the prompts sent to the AI. Leave blank to use the default. Templates support {task}, {domain}, {reason}, {titleHint}, {tabTitle}, {harshness}.</p>
+          <div class="card">
+            <label>evaluate_reason — when the user types a reason on the blocked page</label>
+            <textarea class="prompt" id="promptReason" placeholder="(default)"></textarea>
+          </div>
+          <div class="card">
+            <label>evaluate_site_relevance — auto-allow check on bare domain</label>
+            <textarea class="prompt" id="promptSite" placeholder="(default)"></textarea>
+          </div>
+          <div class="card">
+            <label>evaluate_title — drift detection on temp-allowed pages</label>
+            <textarea class="prompt" id="promptTitle" placeholder="(default)"></textarea>
+          </div>
+          <div class="row">
+            <button class="primary" id="savePrompts">Save prompts</button>
+            <button id="resetPrompts">Reset to defaults</button>
+            <span id="promptStatus" class="tiny muted"></span>
+          </div>
+        </details>
+      </section>
+
+      <!-- Connectors pane -->
+      <section id="pane-connectors" class="pane">
+        <h2>iCal feeds</h2>
+        <p class="muted tiny">Paste any public or "secret" iCal/.ics URL — Google Calendar's secret address, iCloud, Outlook, Schoology, Canvas. Locus refreshes every 30 minutes and shows the next 14 days on the Start pane.</p>
+        <div class="card">
+          <div id="feeds"></div>
+          <div class="feed-row" style="margin-top:8px">
+            <input type="text" id="newFeedName" placeholder="Name (e.g. School)">
+            <input type="text" id="newFeedUrl" placeholder="https://… .ics">
+            <button id="addFeed">Add</button>
+          </div>
+          <div class="row" style="margin-top:10px; gap: 8px">
+            <button id="calSync">Sync now</button>
+            <span id="calStatus" class="muted tiny"></span>
+          </div>
+          <div id="feedErrors"></div>
+        </div>
+      </section>
+
+      <!-- Analytics pane -->
+      <section id="pane-analytics" class="pane">
+        <h2>Focus</h2>
+        <div class="grid3">
+          <div class="card stat-card"><div class="lbl">Today</div><div class="num" id="focusToday">—</div></div>
+          <div class="card stat-card"><div class="lbl">This week</div><div class="num" id="focusWeek">—</div></div>
+          <div class="card stat-card"><div class="lbl">Streak</div><div class="num" id="streak">—</div></div>
+        </div>
+
+        <h2 style="margin-top:18px">Blocking</h2>
+        <div class="grid3">
+          <div class="card stat-card"><div class="lbl">Attempts</div><div class="num" id="blockAttempts">—</div></div>
+          <div class="card stat-card"><div class="lbl">AI approved</div><div class="num" id="blockApproved">—</div></div>
+          <div class="card stat-card"><div class="lbl">AI denied</div><div class="num" id="blockDenied">—</div></div>
+        </div>
+        <div class="card">
+          <div class="stat"><span>Drift revocations</span><span class="v" id="driftRevoked">—</span></div>
+          <div class="stat"><span>Sessions today</span><span class="v" id="sessionsToday">—</span></div>
+        </div>
+
+        <h2 style="margin-top:18px">Last 14 days</h2>
+        <div class="card"><div id="dailyBars"></div></div>
+
+        <h2 style="margin-top:18px">Top blocked domains</h2>
+        <div class="card"><div id="topDomains" class="muted tiny">—</div></div>
+
+        <div class="row" style="margin-top:8px">
+          <button class="danger small" id="clearAnalytics">Clear analytics history</button>
+          <span id="clearStatus" class="tiny muted"></span>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script src="dashboard.js" type="module"></script>
