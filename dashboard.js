@@ -1,18 +1,11 @@
+// Full-tab dashboard: activities, calendar (iCal), analytics, settings, about.
+
 import { PROMPT_DEFAULTS } from "./lib/ai.js";
-import {
-  startGoogleOAuth, disconnectGoogle, fetchUpcomingEvents, isOAuthConfigured
-} from "./lib/calendar.js";
-import { clearAnalytics } from "./lib/analytics.js";
+import { computeSummary, clearAnalytics } from "./lib/analytics.js";
 
 function send(msg) { return new Promise((res) => chrome.runtime.sendMessage(msg, res)); }
 async function getAll() { return await send({ type: "getState" }); }
 async function save(patch) { await chrome.storage.local.set(patch); }
-
-function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));
-}
 
 function tag(text, onRemove) {
   const span = document.createElement("span");
@@ -25,10 +18,34 @@ function tag(text, onRemove) {
   return span;
 }
 
+function fmtMinsHuman(secs) {
+  if (!secs) return "0m";
+  const m = Math.round(secs / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return mm ? `${h}h ${mm}m` : `${h}h`;
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────
+function setPane(name) {
+  document.querySelectorAll(".nav button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.pane === name);
+  });
+  document.querySelectorAll(".pane").forEach((p) => {
+    p.classList.toggle("active", p.id === `pane-${name}`);
+  });
+  if (name === "analytics") renderAnalytics();
+}
+document.querySelectorAll(".nav button").forEach((b) => {
+  b.addEventListener("click", () => setPane(b.dataset.pane));
+});
+
+// ── Render ─────────────────────────────────────────────────────────────
 async function render() {
   const state = await getAll();
 
-  // Activities
+  // Activities ----------------------------------------------------------
   const acts = document.getElementById("activities");
   acts.innerHTML = "";
   const names = Object.keys(state.activities || {});
@@ -99,7 +116,7 @@ async function render() {
     acts.appendChild(card);
   }
 
-  // Always allowed
+  // Always allowed -----------------------------------------------------
   const aaTags = document.getElementById("alwaysAllowedTags");
   aaTags.innerHTML = "";
   for (const d of (state.alwaysAllowed || [])) {
@@ -109,41 +126,64 @@ async function render() {
     }));
   }
 
-  // General
+  // Settings -----------------------------------------------------------
   document.getElementById("theme").value = state.theme || "system";
   document.getElementById("harshness").value = state.harshness || "Standard";
   document.getElementById("tempAllowMins").value = String(state.tempAllowMins ?? 10);
   document.getElementById("driftSeconds").value = String(state.driftCheckSeconds ?? 15);
   document.getElementById("playSoundOnBlock").checked = !!state.playSoundOnBlock;
   document.getElementById("driftCheckEnabled").checked = !!state.driftCheckEnabled;
-
-  // Override code
   document.getElementById("overrideCode").value = state.overrideCode || "";
-
-  // Prompts
   document.getElementById("promptReason").value = state.prompts?.reason || "";
   document.getElementById("promptSite").value = state.prompts?.site || "";
   document.getElementById("promptTitle").value = state.prompts?.title || "";
 
-  // Calendar
+  // Calendar — feeds ---------------------------------------------------
   const cal = state.calendar || {};
-  const calStatus = document.getElementById("calStatus");
-  const calEmail = document.getElementById("calEmail");
-  if (cal.googleToken) {
-    calStatus.textContent = "Connected.";
-    calEmail.textContent = cal.googleEmail ? `Account: ${cal.googleEmail}` : "";
-    if (cal.lastSyncedAt) {
-      calEmail.textContent += `${cal.googleEmail ? " · " : ""}Last sync ${new Date(cal.lastSyncedAt).toLocaleString()}`;
-    }
-  } else {
-    calStatus.textContent = "Not connected.";
-    calEmail.textContent = "";
+  const feeds = cal.feeds || [];
+  const feedsDiv = document.getElementById("feeds");
+  feedsDiv.innerHTML = "";
+  if (!feeds.length) feedsDiv.innerHTML = `<div class="muted tiny">No iCal feeds yet — add one below.</div>`;
+  feeds.forEach((feed, idx) => {
+    const row = document.createElement("div"); row.className = "feed-row";
+    const nm = document.createElement("input"); nm.type = "text"; nm.value = feed.name || "";
+    nm.placeholder = "Name";
+    const url = document.createElement("input"); url.type = "text"; url.value = feed.url || "";
+    url.placeholder = "https://… .ics";
+    const del = document.createElement("button"); del.className = "danger small"; del.textContent = "Remove";
+    const persist = async () => {
+      const next = [...feeds];
+      next[idx] = { name: nm.value.trim(), url: url.value.trim() };
+      await save({ calendar: { ...cal, feeds: next } });
+    };
+    nm.addEventListener("change", persist);
+    url.addEventListener("change", persist);
+    del.addEventListener("click", async () => {
+      const next = feeds.filter((_, i) => i !== idx);
+      await save({ calendar: { ...cal, feeds: next } });
+      render();
+    });
+    row.appendChild(nm); row.appendChild(url); row.appendChild(del);
+    feedsDiv.appendChild(row);
+  });
+
+  // Feed errors
+  const errBox = document.getElementById("feedErrors");
+  errBox.innerHTML = "";
+  for (const err of (cal.lastErrors || [])) {
+    const div = document.createElement("div");
+    div.className = "feed-error";
+    div.textContent = `${err.name || err.url}: ${err.error}. (Some providers block fetch from extensions due to CORS — try a different export URL.)`;
+    errBox.appendChild(div);
   }
-  const warn = document.getElementById("calConfigWarn");
-  if (!isOAuthConfigured()) {
-    warn.hidden = false;
-    warn.textContent = "Google OAuth client ID not set — see lib/calendar.js (GOOGLE_CLIENT_ID_FOR_WORKER) and cloudflare_worker_patch.js.";
-  } else { warn.hidden = true; }
+
+  // Cal status line
+  const statusEl = document.getElementById("calStatus");
+  if (cal.lastSyncedAt) {
+    statusEl.textContent = `Last sync ${new Date(cal.lastSyncedAt).toLocaleString()} · ${(cal.upcoming || []).length} events`;
+  } else {
+    statusEl.textContent = feeds.length ? "Not synced yet — click Sync now." : "Add a feed to start.";
+  }
 
   // Mapping activity dropdown
   const mapSel = document.getElementById("newMapActivity");
@@ -171,7 +211,6 @@ async function render() {
     const auto = document.createElement("input"); auto.type = "checkbox"; auto.checked = !!m.autoStart;
     lab.appendChild(auto); lab.appendChild(document.createTextNode(" auto-start"));
     const del = document.createElement("button"); del.className = "danger small"; del.textContent = "×";
-
     const persist = async () => {
       const next = [...mappings];
       next[idx] = { keyword: kw.value, activity: sel.value, autoStart: auto.checked };
@@ -192,16 +231,25 @@ async function render() {
     mapList.appendChild(row);
   });
 
-  // Upcoming list
+  // Upcoming list — show only auto-start matches first, then everything else
   const up = document.getElementById("calUpcoming");
   if (!cal.upcoming?.length) {
     up.textContent = "No events synced yet.";
   } else {
     up.innerHTML = "";
-    for (const e of cal.upcoming.slice(0, 12)) {
-      const row = document.createElement("div"); row.className = "row between";
-      row.style.padding = "3px 0";
-      const left = document.createElement("div"); left.textContent = e.title;
+    const lcMappings = (cal.mappings || []);
+    const items = [...cal.upcoming].slice(0, 30);
+    for (const e of items) {
+      const row = document.createElement("div"); row.className = "upcoming-row";
+      const left = document.createElement("div");
+      left.textContent = e.title;
+      const matched = lcMappings.find((m) => m.keyword && (e.title || "").toLowerCase().includes((m.keyword || "").toLowerCase()));
+      if (matched) {
+        const b = document.createElement("span"); b.className = "badge";
+        b.textContent = matched.autoStart ? `auto → ${matched.activity}` : `mapped → ${matched.activity}`;
+        b.style.marginLeft = "8px";
+        left.appendChild(b);
+      }
       const right = document.createElement("span"); right.className = "tiny muted";
       try { right.textContent = new Date(e.start).toLocaleString(); } catch { right.textContent = e.start; }
       row.appendChild(left); row.appendChild(right);
@@ -210,7 +258,83 @@ async function render() {
   }
 }
 
-// ── Event handlers ────────────────────────────────────────────────────────
+// ── Analytics rendering ────────────────────────────────────────────────
+async function renderAnalytics() {
+  const s = await computeSummary();
+  document.getElementById("focusToday").textContent = fmtMinsHuman(s.focusToday);
+  document.getElementById("focusWeek").textContent = fmtMinsHuman(s.focusWeek);
+  document.getElementById("streak").textContent = `${s.streakDays}d`;
+  document.getElementById("blockAttempts").textContent = String(s.blockAttempts);
+  document.getElementById("blockApproved").textContent = String(s.blockApproved);
+  document.getElementById("blockDenied").textContent = String(s.blockDenied);
+  document.getElementById("driftRevoked").textContent = String(s.driftRevocations);
+  document.getElementById("sessionsToday").textContent = String(s.sessionsToday);
+
+  const bars = document.getElementById("dailyBars");
+  bars.innerHTML = "";
+  const entries = Object.entries(s.dailySeries).sort((a, b) => a[0].localeCompare(b[0]));
+  const max = Math.max(1, ...entries.map(([, v]) => v));
+  for (const [day, secs] of entries) {
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    const lab = document.createElement("div");
+    lab.className = "bar-label";
+    lab.innerHTML = `<span>${day.slice(5)}</span><span>${fmtMinsHuman(secs)}</span>`;
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    const fill = document.createElement("div");
+    fill.className = "bar-fill";
+    fill.style.width = `${Math.round((secs / max) * 100)}%`;
+    bar.appendChild(fill);
+    row.appendChild(lab); row.appendChild(bar);
+    bars.appendChild(row);
+  }
+
+  // By-activity — naive accumulation from event log.
+  const state = await getAll();
+  const events = state.analytics?.events || [];
+  const cutoff = Date.now() - 14 * 86400_000;
+  const byAct = {};
+  for (const ev of events) {
+    if (ev.type !== "session_end" || (ev.ts || 0) < cutoff) continue;
+    const a = ev.activity || "(unknown)";
+    byAct[a] = (byAct[a] || 0) + (ev.duration_ms || 0) / 1000;
+  }
+  const ba = document.getElementById("byActivity");
+  const sorted = Object.entries(byAct).sort((a, b) => b[1] - a[1]);
+  if (!sorted.length) {
+    ba.textContent = "No completed sessions yet.";
+  } else {
+    ba.innerHTML = "";
+    const maxA = Math.max(...sorted.map(([, v]) => v));
+    for (const [name, secs] of sorted) {
+      const row = document.createElement("div"); row.className = "bar-row";
+      const lab = document.createElement("div"); lab.className = "bar-label";
+      lab.innerHTML = `<span>${name}</span><span>${fmtMinsHuman(secs)}</span>`;
+      const bar = document.createElement("div"); bar.className = "bar";
+      const fill = document.createElement("div"); fill.className = "bar-fill";
+      fill.style.width = `${Math.round((secs / maxA) * 100)}%`;
+      bar.appendChild(fill);
+      row.appendChild(lab); row.appendChild(bar);
+      ba.appendChild(row);
+    }
+  }
+
+  const td = document.getElementById("topDomains");
+  if (!s.topBlockedDomains.length) {
+    td.textContent = "No blocks yet.";
+  } else {
+    td.innerHTML = "";
+    for (const [host, n] of s.topBlockedDomains) {
+      const row = document.createElement("div");
+      row.className = "stat";
+      row.innerHTML = `<span>${host}</span><span class="v">${n}</span>`;
+      td.appendChild(row);
+    }
+  }
+}
+
+// ── Event handlers ─────────────────────────────────────────────────────
 document.getElementById("addActivity").addEventListener("click", async () => {
   const inp = document.getElementById("newActivityName");
   const v = inp.value.trim();
@@ -252,7 +376,6 @@ document.getElementById("saveGeneral").addEventListener("click", async () => {
     playSoundOnBlock: document.getElementById("playSoundOnBlock").checked,
     driftCheckEnabled: document.getElementById("driftCheckEnabled").checked
   });
-  // Apply theme live.
   document.documentElement.setAttribute("data-theme", document.getElementById("theme").value);
   const s = document.getElementById("generalStatus");
   s.textContent = "Saved."; setTimeout(() => s.textContent = "", 1500);
@@ -276,26 +399,27 @@ document.getElementById("resetPrompts").addEventListener("click", async () => {
   document.getElementById("promptTitle").value = PROMPT_DEFAULTS.title;
 });
 
-// Calendar
-document.getElementById("calConnect").addEventListener("click", async () => {
-  try {
-    const r = await startGoogleOAuth();
-    alert(`Connected as ${r.email || "Google account"}. Click Sync now to fetch events.`);
-    render();
-  } catch (e) {
-    alert(`OAuth failed: ${e.message}`);
-  }
-});
-
-document.getElementById("calSync").addEventListener("click", async () => {
-  const r = await send({ type: "calendar:sync" });
-  if (!r?.ok) alert(`Sync failed: ${r?.error || "unknown"}`);
+// Calendar — feeds
+document.getElementById("addFeed").addEventListener("click", async () => {
+  const nm = document.getElementById("newFeedName").value.trim();
+  const url = document.getElementById("newFeedUrl").value.trim();
+  if (!url) return;
+  const state = await getAll();
+  const cal = state.calendar || {};
+  const feeds = [...(cal.feeds || []), { name: nm || "Calendar", url }];
+  await save({ calendar: { ...cal, feeds } });
+  document.getElementById("newFeedName").value = "";
+  document.getElementById("newFeedUrl").value = "";
   render();
 });
 
-document.getElementById("calDisconnect").addEventListener("click", async () => {
-  if (!confirm("Disconnect Google Calendar?")) return;
-  await disconnectGoogle();
+document.getElementById("calSync").addEventListener("click", async () => {
+  const statusEl = document.getElementById("calStatus");
+  statusEl.textContent = "Syncing…";
+  const r = await send({ type: "calendar:sync" });
+  if (!r?.ok) {
+    statusEl.textContent = `Sync failed: ${r?.error || "unknown"}`;
+  }
   render();
 });
 
@@ -318,6 +442,13 @@ document.getElementById("clearAnalytics").addEventListener("click", async () => 
   await clearAnalytics();
   const s = document.getElementById("clearStatus");
   s.textContent = "Cleared."; setTimeout(() => s.textContent = "", 1500);
+  renderAnalytics();
 });
+
+// If URL hash specifies a tab, open it.
+if (location.hash) {
+  const name = location.hash.replace("#", "");
+  if (["activities", "calendar", "analytics", "settings", "about"].includes(name)) setPane(name);
+}
 
 render();

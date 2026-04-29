@@ -1,0 +1,255 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Locus — Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="lib/theme.js"></script>
+  <style>
+    body { padding: 0; margin: 0; }
+    .page { max-width: 960px; margin: 0 auto; padding: 28px 28px 60px; }
+    .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+    .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 30px; }
+    .nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 18px 0 22px; flex-wrap: wrap; }
+    .nav button {
+      background: transparent; border: 0; border-bottom: 2px solid transparent;
+      padding: 10px 14px; border-radius: 0; color: var(--ink-soft); font-weight: 500;
+    }
+    .nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+    .nav button:hover { background: transparent; color: var(--ink); }
+    .pane { display: none; }
+    .pane.active { display: block; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .field { display: flex; flex-direction: column; }
+    textarea.prompt { min-height: 160px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+    .map-row { display: grid; grid-template-columns: 2fr 1.5fr auto auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .feed-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .activity-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .activity-row input { flex: 1; }
+    .domains { margin-top: 8px; }
+    .add-domain { display: flex; gap: 6px; margin-top: 6px; }
+    .add-domain input { flex: 1; }
+    .small { padding: 4px 10px; font-size: 12px; }
+    section h2 { margin-top: 4px; }
+    .stat-card { padding: 14px; }
+    .stat-card .num { font-size: 26px; font-family: "Iowan Old Style", Palatino, Georgia, serif; }
+    .stat-card .lbl { font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; }
+    .bar-row { margin: 4px 0; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); }
+    .bar { background: #fff; border: 1px solid var(--border); border-radius: 4px; height: 10px; overflow: hidden; }
+    .bar-fill { background: var(--accent); height: 100%; }
+    .stat { display: flex; justify-content: space-between; padding: 4px 0; }
+    .stat .v { font-weight: 600; }
+    .feed-error { color: var(--danger); font-size: 12px; margin-top: 6px; }
+    .upcoming-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+    .upcoming-row:last-child { border-bottom: 0; }
+    .badge { display: inline-block; background: var(--accent-soft); border: 1px solid var(--border); color: #6e4d0a; padding: 1px 8px; border-radius: 999px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div class="brand">Locus</div>
+      <div class="muted tiny">v0.3 · local-first focus sessions</div>
+    </div>
+    <p class="muted">Dashboard for activities, calendar, analytics, and settings.</p>
+
+    <nav class="nav">
+      <button data-pane="activities" class="active">Activities</button>
+      <button data-pane="calendar">Calendar</button>
+      <button data-pane="analytics">Analytics</button>
+      <button data-pane="settings">Settings</button>
+      <button data-pane="about">About</button>
+    </nav>
+
+    <!-- ── Activities ─────────────────────────────────────────────── -->
+    <section id="pane-activities" class="pane active">
+      <h2>Activities</h2>
+      <p class="muted tiny">Each activity has its own whitelist. Everything else is blocked when the session is active.</p>
+      <div id="activities"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="newActivityName" placeholder="New activity name (e.g. Essay writing)">
+        <button class="primary" id="addActivity">Add activity</button>
+      </div>
+
+      <hr>
+
+      <h2>Always allowed</h2>
+      <p class="muted tiny">Domains never blocked, regardless of which activity is active.</p>
+      <div class="card">
+        <div id="alwaysAllowedTags"></div>
+        <div class="add-domain">
+          <input type="text" id="newAlwaysAllowed" placeholder="docs.google.com">
+          <button id="addAlwaysAllowed">Add</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Calendar ──────────────────────────────────────────────── -->
+    <section id="pane-calendar" class="pane">
+      <h2>iCal feeds</h2>
+      <p class="muted tiny">Paste any public or "secret" iCal/.ics URL — Google Calendar's secret address, iCloud, Outlook, Schoology, Canvas. Locus refreshes every 30 minutes.</p>
+      <div class="card">
+        <div id="feeds"></div>
+        <div class="feed-row" style="margin-top:8px">
+          <input type="text" id="newFeedName" placeholder="Name (e.g. School)">
+          <input type="text" id="newFeedUrl" placeholder="https://… .ics">
+          <button id="addFeed">Add</button>
+        </div>
+        <div class="row" style="margin-top:10px; gap: 8px">
+          <button id="calSync">Sync now</button>
+          <span id="calStatus" class="muted tiny"></span>
+        </div>
+        <div id="feedErrors"></div>
+      </div>
+
+      <h2 style="margin-top:18px">Keyword → activity mappings</h2>
+      <p class="muted tiny">When an event title contains a keyword (case-insensitive substring), start the matching activity. Toggle "auto-start" to actually launch sessions automatically at the event's start time.</p>
+      <div class="card">
+        <div id="calMappings"></div>
+        <div class="map-row" style="margin-top:8px">
+          <input type="text" id="newMapKeyword" placeholder="Title keyword (e.g. Math)">
+          <select id="newMapActivity"></select>
+          <label class="tiny" style="margin:0"><input type="checkbox" id="newMapAutoStart" checked> auto-start</label>
+          <button id="addMapping">Add</button>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">Upcoming auto-starts (next 14 days)</h2>
+      <div class="card">
+        <div id="calUpcoming" class="muted tiny">—</div>
+      </div>
+    </section>
+
+    <!-- ── Analytics ─────────────────────────────────────────────── -->
+    <section id="pane-analytics" class="pane">
+      <h2>Focus</h2>
+      <div class="grid3">
+        <div class="card stat-card"><div class="lbl">Today</div><div class="num" id="focusToday">—</div></div>
+        <div class="card stat-card"><div class="lbl">This week</div><div class="num" id="focusWeek">—</div></div>
+        <div class="card stat-card"><div class="lbl">Streak</div><div class="num" id="streak">—</div></div>
+      </div>
+
+      <h2 style="margin-top:18px">Blocking</h2>
+      <div class="grid3">
+        <div class="card stat-card"><div class="lbl">Attempts</div><div class="num" id="blockAttempts">—</div></div>
+        <div class="card stat-card"><div class="lbl">AI approved</div><div class="num" id="blockApproved">—</div></div>
+        <div class="card stat-card"><div class="lbl">AI denied</div><div class="num" id="blockDenied">—</div></div>
+      </div>
+      <div class="card">
+        <div class="stat"><span>Drift revocations</span><span class="v" id="driftRevoked">—</span></div>
+        <div class="stat"><span>Sessions today</span><span class="v" id="sessionsToday">—</span></div>
+      </div>
+
+      <h2 style="margin-top:18px">Last 14 days</h2>
+      <div class="card"><div id="dailyBars"></div></div>
+
+      <h2 style="margin-top:18px">By activity (last 14 days)</h2>
+      <div class="card"><div id="byActivity" class="muted tiny">—</div></div>
+
+      <h2 style="margin-top:18px">Top blocked domains</h2>
+      <div class="card"><div id="topDomains" class="muted tiny">—</div></div>
+
+      <div class="row" style="margin-top:8px">
+        <button class="danger small" id="clearAnalytics">Clear analytics history</button>
+        <span id="clearStatus" class="tiny muted"></span>
+      </div>
+    </section>
+
+    <!-- ── Settings ──────────────────────────────────────────────── -->
+    <section id="pane-settings" class="pane">
+      <h2>General</h2>
+      <div class="card">
+        <div class="grid2">
+          <div class="field">
+            <label>Theme</label>
+            <select id="theme">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Harshness</label>
+            <select id="harshness">
+              <option>Lenient</option>
+              <option>Standard</option>
+              <option>Strict</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Temporary allow duration (minutes)</label>
+            <input type="text" id="tempAllowMins">
+          </div>
+          <div class="field">
+            <label>Drift check interval (seconds)</label>
+            <input type="text" id="driftSeconds">
+          </div>
+          <div class="field">
+            <label><input type="checkbox" id="playSoundOnBlock"> Play a sound on block</label>
+          </div>
+          <div class="field">
+            <label><input type="checkbox" id="driftCheckEnabled"> Enable smart re-blocking (drift detection)</label>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 10px;">
+          <button class="primary" id="saveGeneral">Save</button>
+          <span id="generalStatus" class="tiny muted"></span>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">Override code</h2>
+      <p class="muted tiny">Fallback escape hatch. Pick something tedious so future-you actually thinks before using it.</p>
+      <div class="card">
+        <input type="text" id="overrideCode" autocomplete="off">
+        <div class="row" style="margin-top: 8px;">
+          <button class="primary" id="saveOverride">Save</button>
+          <span id="overrideStatus" class="tiny muted"></span>
+        </div>
+      </div>
+
+      <details style="margin-top:18px">
+        <summary><h2 style="display:inline-block; margin:0">Advanced — AI prompts</h2></summary>
+        <p class="muted tiny">Override the prompts sent to the AI. Leave blank to use the default. Templates support {session}, {task}, {domain}, {reason}, {titleHint}, {tabTitle}, {harshness}.</p>
+        <div class="card">
+          <label>evaluate_reason — when the user types a reason on the blocked page</label>
+          <textarea class="prompt" id="promptReason" placeholder="(default)"></textarea>
+        </div>
+        <div class="card">
+          <label>evaluate_site_relevance — auto-allow check on bare domain</label>
+          <textarea class="prompt" id="promptSite" placeholder="(default)"></textarea>
+        </div>
+        <div class="card">
+          <label>evaluate_title — drift detection on temp-allowed pages</label>
+          <textarea class="prompt" id="promptTitle" placeholder="(default)"></textarea>
+        </div>
+        <div class="row">
+          <button class="primary" id="savePrompts">Save prompts</button>
+          <button id="resetPrompts">Reset to defaults</button>
+          <span id="promptStatus" class="tiny muted"></span>
+        </div>
+      </details>
+    </section>
+
+    <!-- ── About ─────────────────────────────────────────────────── -->
+    <section id="pane-about" class="pane">
+      <h2>About Locus</h2>
+      <div class="card">
+        <p>Locus is a Manifest V3 Chrome extension. You define activities with a domain whitelist; while a session is active, every other site is blocked. An AI gatekeeper decides whether your reasons for breaking focus are plausible.</p>
+        <p class="muted tiny">Version 0.3 · No tracking, no telemetry. All analytics are local.</p>
+        <ul class="muted tiny">
+          <li>Per-session task — passed into AI prompts as context.</li>
+          <li>Smart re-blocking via title-based drift detection.</li>
+          <li>Tightened denial UX (denial locks per tab).</li>
+          <li>iCal calendar import (Google secret address, iCloud, Outlook, Schoology, Canvas).</li>
+          <li>Local analytics: 14-day series, streaks, top blocked domains.</li>
+        </ul>
+        <p class="tiny"><a href="https://github.com/" target="_blank" rel="noopener">GitHub</a></p>
+      </div>
+    </section>
+  </div>
+
+  <script src="dashboard.js" type="module"></script>
+</body>
+</html>

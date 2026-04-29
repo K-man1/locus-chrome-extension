@@ -242,12 +242,12 @@ async function onCalendarEventFire(alarmName) {
 
 async function tryCalendarSync() {
   const { calendar } = await getState();
-  if (!calendar?.googleToken) return;
+  if (!calendar?.feeds?.length) return;
   try {
     await fetchUpcomingEvents(14);
     await rescheduleCalendarEventAlarms();
   } catch (e) {
-    // Likely token expired and refresh failed — leave for user to re-auth.
+    // Per-feed errors are surfaced via calendar.lastErrors; swallow here.
   }
 }
 
