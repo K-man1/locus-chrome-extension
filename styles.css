@@ -13,6 +13,44 @@
   --shadow:  0 1px 0 rgba(0,0,0,0.02), 0 6px 24px rgba(40,30,10,0.05);
 }
 
+/* Dark theme — keep the gold accent against an ink ground. */
+html[data-theme="dark"] {
+  --surface: #161410;
+  --card:    #201d18;
+  --border:  #36312a;
+  --ink:     #f3ecdb;
+  --ink-soft:#b3ab97;
+  --accent:  #E8A020;
+  --accent-soft: #3a2c10;
+  --danger:  #d97560;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --surface: #161410;
+    --card:    #201d18;
+    --border:  #36312a;
+    --ink:     #f3ecdb;
+    --ink-soft:#b3ab97;
+    --accent:  #E8A020;
+    --accent-soft: #3a2c10;
+    --danger:  #d97560;
+  }
+}
+html[data-theme="dark"] input[type=text],
+html[data-theme="dark"] input[type=password],
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  background: #0f0e0a; color: var(--ink);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] input[type=text],
+  html[data-theme="system"] input[type=password],
+  html[data-theme="system"] textarea,
+  html[data-theme="system"] select {
+    background: #0f0e0a; color: var(--ink);
+  }
+}
+
 * { box-sizing: border-box; }
 
 html, body {

@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <title>Blocked — Locus</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="lib/theme.js"></script>
   <style>
     body { padding: 0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .wrap { max-width: 540px; width: 100%; padding: 40px 28px; }
+    .wrap { max-width: 560px; width: 100%; padding: 40px 28px; }
     .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 28px; margin-bottom: 4px; }
     .session-tag { display: inline-block; background: var(--accent-soft); color: #6e4d0a; padding: 4px 10px; border-radius: 999px; font-size: 12px; margin-bottom: 18px; }
     .url { font-family: ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; color: var(--ink); background: var(--card); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
@@ -17,12 +18,19 @@
     .verdict { padding: 12px; border-radius: 8px; margin-top: 12px; }
     .verdict.approved { background: #ebf5e7; color: #2c5825; border: 1px solid #c8e0bf; }
     .verdict.denied { background: #fbeae5; color: #7a2a1c; border: 1px solid #e9c4b9; }
+    .verdict.drift { background: #fff4dc; color: #6e4d0a; border: 1px solid #ecd6a4; }
+    .denial-big {
+      background: #fbeae5; color: #7a2a1c; border: 1px solid #e9c4b9;
+      padding: 16px; border-radius: 10px; margin-top: 12px;
+    }
+    .denial-big h2 { color: #7a2a1c; margin-bottom: 8px; }
     .spinner {
       display: inline-block; width: 14px; height: 14px;
       border: 2px solid var(--border); border-top-color: var(--accent);
       border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
@@ -31,14 +39,16 @@
     <div class="session-tag" id="sessionTag">Focus session</div>
 
     <h1 id="heading">This site isn't on your allowlist.</h1>
-    <p>You're focusing on <strong id="sessionName"></strong>. If you really need this page, tell the AI why.</p>
+    <p>You're focusing on <strong id="sessionName"></strong>. <span id="taskLine"></span></p>
+
+    <div id="driftBox" hidden></div>
 
     <div class="card">
       <label>Blocked URL</label>
       <div class="url" id="urlBox"></div>
     </div>
 
-    <div class="card">
+    <div id="askBox" class="card">
       <label for="reason">Why do you need this site?</label>
       <textarea id="reason" placeholder="e.g. I need to look up a formula for my math homework."></textarea>
       <div class="actions">
@@ -46,6 +56,15 @@
         <button id="backBtn">Go back</button>
       </div>
       <div id="status"></div>
+    </div>
+
+    <div id="lockedBox" class="denial-big" hidden>
+      <h2>The AI denied this request.</h2>
+      <p id="lockedReason" style="color:#7a2a1c"></p>
+      <p style="color:#7a2a1c"><strong>To try again, close this tab and re-open the site.</strong></p>
+      <div class="actions">
+        <button id="lockedBack">Go back</button>
+      </div>
     </div>
 
     <details>

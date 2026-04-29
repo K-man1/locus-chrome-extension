@@ -4,14 +4,27 @@
   <meta charset="utf-8">
   <title>Locus</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="lib/theme.js"></script>
   <style>
-    body { width: 320px; padding: 16px; }
+    body { width: 340px; padding: 16px; }
     .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .header .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 20px; }
     .timer { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 22px; color: var(--ink); }
     select { margin-bottom: 10px; }
     .allowed-list { max-height: 120px; overflow-y: auto; }
     .footer { margin-top: 12px; font-size: 12px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+    .tabs button { flex: 1; padding: 6px 10px; font-size: 12px; }
+    .tabs button.active { background: var(--accent); color: #1a1305; border-color: transparent; font-weight: 600; }
+    .stat { display: flex; justify-content: space-between; padding: 4px 0; }
+    .stat .v { font-weight: 600; }
+    .bar-row { margin: 4px 0; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); }
+    .bar { background: #fff; border: 1px solid var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+    .bar-fill { background: var(--accent); height: 100%; }
+    .task-line { font-size: 12px; color: var(--ink-soft); margin-top: 4px; word-break: break-word; }
+    .task-edit { display: flex; gap: 6px; margin-top: 6px; }
+    .task-edit input { flex: 1; }
   </style>
 </head>
 <body>
@@ -20,27 +33,64 @@
     <a href="#" id="opt">Settings</a>
   </div>
 
-  <div id="idle">
-    <h3>Start a session</h3>
-    <select id="activitySelect"></select>
-    <button class="primary" id="startBtn" style="width:100%">Start focus</button>
+  <div class="tabs">
+    <button id="tabSession" class="active">Session</button>
+    <button id="tabAnalytics">Analytics</button>
   </div>
 
-  <div id="active" style="display:none">
-    <div class="card">
-      <div class="row between">
-        <div>
-          <div class="muted tiny">In session</div>
-          <div id="activeName" style="font-size:16px;font-weight:600"></div>
-        </div>
-        <div class="timer" id="timer">00:00</div>
-      </div>
+  <div id="sessionPane">
+    <div id="idle">
+      <h3>Start a session</h3>
+      <select id="activitySelect"></select>
+      <label for="taskInput" style="margin-top:8px">What are you working on? (one line)</label>
+      <input type="text" id="taskInput" placeholder="e.g. Finish chapter 4 problems">
+      <button class="primary" id="startBtn" style="width:100%; margin-top:8px">Start focus</button>
     </div>
 
-    <h3>Allowed</h3>
-    <div class="card allowed-list" id="allowedList"></div>
+    <div id="active" style="display:none">
+      <div class="card">
+        <div class="row between">
+          <div>
+            <div class="muted tiny">In session</div>
+            <div id="activeName" style="font-size:16px;font-weight:600"></div>
+          </div>
+          <div class="timer" id="timer">00:00</div>
+        </div>
+        <div class="task-line" id="taskLine"></div>
+        <div class="task-edit">
+          <input type="text" id="taskEdit" placeholder="Edit task…">
+          <button id="saveTask" class="small">Save</button>
+        </div>
+      </div>
 
-    <button class="danger" id="stopBtn" style="width:100%">End session</button>
+      <h3>Allowed</h3>
+      <div class="card allowed-list" id="allowedList"></div>
+
+      <button class="danger" id="stopBtn" style="width:100%">End session</button>
+    </div>
+  </div>
+
+  <div id="analyticsPane" style="display:none">
+    <div class="card">
+      <div class="stat"><span>Focus today</span><span class="v" id="focusToday">—</span></div>
+      <div class="stat"><span>Focus this week</span><span class="v" id="focusWeek">—</span></div>
+      <div class="stat"><span>Sessions today</span><span class="v" id="sessionsToday">—</span></div>
+      <div class="stat"><span>Streak</span><span class="v" id="streak">—</span></div>
+    </div>
+    <div class="card">
+      <div class="stat"><span>Block attempts</span><span class="v" id="blockAttempts">—</span></div>
+      <div class="stat"><span>AI approved</span><span class="v" id="blockApproved">—</span></div>
+      <div class="stat"><span>AI denied</span><span class="v" id="blockDenied">—</span></div>
+      <div class="stat"><span>Drift revocations</span><span class="v" id="driftRevoked">—</span></div>
+    </div>
+    <div class="card">
+      <h3>Last 14 days</h3>
+      <div id="dailyBars"></div>
+    </div>
+    <div class="card">
+      <h3>Top blocked domains</h3>
+      <div id="topDomains" class="muted tiny">—</div>
+    </div>
   </div>
 
   <div class="footer muted tiny">
