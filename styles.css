@@ -13,6 +13,27 @@
   --shadow:  0 1px 0 rgba(0,0,0,0.02), 0 6px 24px rgba(40,30,10,0.05);
 }
 
+/* Light theme — same defaults as :root, explicitly set for `data-theme="light"`. */
+html[data-theme="light"] {
+  --surface: #FDFAF5;
+  --card:    #F7F2E8;
+  --border:  #E8DFC8;
+  --ink:     #1c1a14;
+  --ink-soft:#5b574c;
+  --accent:  #E8A020;
+  --accent-soft: #FDF3E0;
+  --danger:  #b04a3a;
+  color-scheme: light;
+}
+
+html[data-theme="light"] input[type=text],
+html[data-theme="light"] input[type=password],
+html[data-theme="light"] textarea,
+html[data-theme="light"] select {
+  background: var(--card);
+  color: var(--ink);
+}
+
 /* Dark theme — keep the gold accent against an ink ground. */
 html[data-theme="dark"] {
   --surface: #161410;
@@ -23,7 +44,20 @@ html[data-theme="dark"] {
   --accent:  #E8A020;
   --accent-soft: #3a2c10;
   --danger:  #d97560;
+  color-scheme: dark;
 }
+
+html[data-theme="dark"] input[type=text],
+html[data-theme="dark"] input[type=password],
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  background: #0f0e0a; color: var(--ink);
+}
+
+html[data-theme="system"] {
+  color-scheme: light dark;
+}
+
 @media (prefers-color-scheme: dark) {
   html[data-theme="system"] {
     --surface: #161410;
@@ -35,14 +69,6 @@ html[data-theme="dark"] {
     --accent-soft: #3a2c10;
     --danger:  #d97560;
   }
-}
-html[data-theme="dark"] input[type=text],
-html[data-theme="dark"] input[type=password],
-html[data-theme="dark"] textarea,
-html[data-theme="dark"] select {
-  background: #0f0e0a; color: var(--ink);
-}
-@media (prefers-color-scheme: dark) {
   html[data-theme="system"] input[type=text],
   html[data-theme="system"] input[type=password],
   html[data-theme="system"] textarea,
@@ -64,15 +90,14 @@ html, body {
 }
 
 h1, h2, h3 {
-  font-family: "Iowan Old Style", "Palatino", Georgia, serif;
-  font-weight: 400;
+  font-family: "Instrument Serif", serif;
   letter-spacing: -0.01em;
   margin: 0 0 8px;
 }
 
-h1 { font-size: 22px; }
-h2 { font-size: 17px; }
-h3 { font-size: 14px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; font-family: -apple-system, sans-serif; font-weight: 600; }
+h1 { font-size: 35px; font-weight: 100;}
+h2 { font-size: 25px; }
+h3 { font-size: 20px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; font-family: -apple-system, sans-serif; font-weight: 600; }
 
 p  { margin: 0 0 10px; color: var(--ink-soft); }
 
@@ -114,7 +139,7 @@ select {
   font: inherit;
   width: 100%;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--card);
   color: var(--ink);
   padding: 8px 10px;
   border-radius: 8px;

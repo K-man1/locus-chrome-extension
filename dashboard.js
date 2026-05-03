@@ -231,6 +231,13 @@ async function renderSettings() {
   document.getElementById("promptTitle").value = state.prompts?.title || "";
 }
 
+document.getElementById("theme").addEventListener("change", (event) => {
+  const selected = event.target.value;
+  if (selected === "system" || selected === "light" || selected === "dark") {
+    document.documentElement.setAttribute("data-theme", selected);
+  }
+});
+
 document.getElementById("saveAlwaysAllowed").addEventListener("click", async () => {
   const raw = document.getElementById("alwaysAllowedText").value;
   const list = raw.split(/[\n,]+/)
@@ -328,7 +335,11 @@ async function renderConnectors() {
   for (const err of (cal.lastErrors || [])) {
     const div = document.createElement("div");
     div.className = "feed-error";
-    div.textContent = `${err.name || err.url}: ${err.error}. (Some providers block fetch from extensions due to CORS — try a different export URL.)`;
+    let hint = "";
+    if (/HTTP 404/i.test(err.error)) hint = " — the URL is wrong. Make sure you copied the iCal/ICS export link, not the calendar's web page.";
+    else if (/HTTP 401|HTTP 403/i.test(err.error)) hint = " — the URL needs auth. Use a public/secret iCal export link, not one that requires a login.";
+    else if (/Failed to fetch|NetworkError|CORS/i.test(err.error)) hint = " — the server blocked the request (likely CORS). Try a different export URL.";
+    div.textContent = `${err.name || err.url}: ${err.error}.${hint}`;
     errBox.appendChild(div);
   }
 

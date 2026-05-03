@@ -72,6 +72,10 @@ async function shouldBlock(url) {
   return { host, task: session.taskText || "" };
 }
 
+// Tracks in-progress AI evaluations so onBeforeNavigate + onCommitted
+// for the same navigation don't fire two parallel AI calls.
+const pendingEvals = new Map();
+
 async function maybeRedirect(tabId, url) {
   const { denialLocks } = await getState();
   const lock = denialLocks?.[String(tabId)];
@@ -89,9 +93,24 @@ async function maybeRedirect(tabId, url) {
 
   const blocked = await shouldBlock(url);
   if (!blocked) return;
-  await logEvent("block_attempt", { host: blocked.host, task: blocked.task, url });
-  const target = `${BLOCKED_PAGE}?url=${encodeURIComponent(url)}&host=${encodeURIComponent(blocked.host)}&task=${encodeURIComponent(blocked.task)}`;
-  try { await chrome.tabs.update(tabId, { url: target }); } catch {}
+
+  const key = `${tabId}:${url}`;
+  if (pendingEvals.has(key)) return;
+  pendingEvals.set(key, true);
+
+  try {
+    const r = await evaluateSiteRelevance({ domain: blocked.host, task: blocked.task, url });
+    if (r.approved) {
+      await grantTempAllow(blocked.host, r.reason);
+      await logEvent("block_approved", { host: blocked.host, mode: "auto", reason: r.reason });
+    } else {
+      await logEvent("block_attempt", { host: blocked.host, task: blocked.task, url });
+      const target = `${BLOCKED_PAGE}?url=${encodeURIComponent(url)}&host=${encodeURIComponent(blocked.host)}&task=${encodeURIComponent(blocked.task)}`;
+      try { await chrome.tabs.update(tabId, { url: target }); } catch {}
+    }
+  } finally {
+    pendingEvals.delete(key);
+  }
 }
 
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
@@ -101,6 +120,14 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
 chrome.webNavigation.onCommitted.addListener((details) => {
   if (details.frameId !== 0) return;
   maybeRedirect(details.tabId, details.url);
+});
+
+// Check a tab when the user switches to it (covers already-loaded pages).
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.url) maybeRedirect(tabId, tab.url);
+  } catch {}
 });
 
 chrome.webNavigation.onCommitted.addListener(async (details) => {
@@ -241,7 +268,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           const r = await evaluateSiteRelevance({
             domain: msg.host,
             task: session.taskText || "",
-            title: msg.title || ""
+            url: msg.url || ""
           });
           if (r.approved) {
             await grantTempAllow(msg.host, r.reason);
@@ -303,6 +330,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   })();
   return true;
 });
+
 
 async function grantTempAllow(host, reason = "") {
   const { tempAllow, tempAllowMins } = await getState();

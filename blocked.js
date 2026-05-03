@@ -7,7 +7,6 @@ const startedDenied = params.get("denied") === "1";
 
 document.getElementById("urlBox").textContent = blockedUrl || "(unknown)";
 document.getElementById("taskName").textContent = taskParam || "your task";
-document.getElementById("sessionTag").textContent = taskParam ? `Task · ${taskParam}` : "Focus session";
 
 if (driftReason) {
   const box = document.getElementById("driftBox");
@@ -35,28 +34,12 @@ async function proceed() {
 
 (async () => {
   const state = await send({ type: "getState" });
-  const taskLine = document.getElementById("taskLine");
-  if (state?.session?.taskText) {
-    taskLine.textContent = `If you really need this page, tell the AI why.`;
-  } else {
-    taskLine.textContent = "If you really need this page, tell the AI why.";
-  }
+  document.getElementById("taskLine").textContent = "If you really need this page, tell the AI why.";
 
   if (state?.playSoundOnBlock) playBlockSound();
 
   if (startedDenied) {
     showLocked("The AI denied a previous request for this site in this tab.");
-    return;
-  }
-
-  const status = document.getElementById("status");
-  setStatus(status, `<div class="muted tiny"><span class="spinner"></span>Checking with the AI…</div>`);
-  const r = await send({ type: "evaluateRelevance", host, title: document.title || "" });
-  if (r && r.approved) {
-    setStatus(status, `<div class="verdict approved">Auto-allowed: ${escapeHtml(r.reason || "obviously relevant")}. Continuing…</div>`);
-    setTimeout(proceed, 700);
-  } else {
-    setStatus(status, "");
   }
 })();
 
@@ -78,12 +61,15 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("backBtn").addEventListener("click", () => {
-  if (history.length > 1) history.back(); else location.replace("about:blank");
-});
-document.getElementById("lockedBack").addEventListener("click", () => {
-  if (history.length > 1) history.back(); else location.replace("about:blank");
-});
+async function closeThisTab() {
+  try {
+    const tab = await chrome.tabs.getCurrent();
+    if (tab && tab.id != null) { chrome.tabs.remove(tab.id); return; }
+  } catch {}
+  try { window.close(); } catch {}
+}
+document.getElementById("backBtn").addEventListener("click", closeThisTab);
+document.getElementById("lockedBack").addEventListener("click", closeThisTab);
 
 document.getElementById("overrideBtn").addEventListener("click", async () => {
   const code = document.getElementById("code").value;
