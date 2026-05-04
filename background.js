@@ -12,6 +12,11 @@ const BLOCKED_PAGE = chrome.runtime.getURL("blocked.html");
 const DRIFT_ALARM = "locus-drift";
 const GC_ALARM = "locus-gc";
 const CAL_SYNC_ALARM = "locus-cal-sync";
+const SESSION_WATCH_ALARM = "locus-session-watch";
+
+const LONG_SESSION_HOURS = 5;
+const LONG_SESSION_TIMEOUT_MS = 5 * 60 * 1000;
+const LONG_SESSION_SNOOZE_MS = 60 * 60 * 1000;
 
 chrome.runtime.onInstalled.addListener(async () => {
   await ensureDefaults();
@@ -26,6 +31,7 @@ async function rescheduleAlarms() {
   chrome.alarms.create(GC_ALARM, { periodInMinutes: 1 });
   chrome.alarms.create(DRIFT_ALARM, { periodInMinutes: 0.25 });
   chrome.alarms.create(CAL_SYNC_ALARM, { periodInMinutes: 30 });
+  chrome.alarms.create(SESSION_WATCH_ALARM, { periodInMinutes: 1 });
 }
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
@@ -33,6 +39,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === GC_ALARM) return await gcTempAllowAndDenials();
     if (alarm.name === DRIFT_ALARM) return await driftSweep();
     if (alarm.name === CAL_SYNC_ALARM) return await tryCalendarSync();
+    if (alarm.name === SESSION_WATCH_ALARM) return await checkLongSession();
   } catch (e) {
     console.warn("alarm error", alarm.name, e);
   }
@@ -172,7 +179,7 @@ async function driftSweep() {
   if (now - last < interval) return;
   try { await chrome.storage.session.set({ driftLastSweep: now }); } catch {}
 
-  const tabs = await chrome.tabs.query({});
+  const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   for (const tab of tabs) {
     if (!tab.id || !tab.url) continue;
     let host = "";
@@ -205,6 +212,60 @@ async function driftSweep() {
     }
   }
 }
+
+async function checkLongSession() {
+  const { session } = await getState();
+  if (!session?.startedAt) return;
+
+  const elapsed = Date.now() - session.startedAt;
+  if (elapsed < LONG_SESSION_HOURS * 3600_000) {
+    try { await chrome.storage.session.remove(["longSessionWarnedAt", "longSessionKeptGoingAt"]); } catch {}
+    return;
+  }
+
+  const sg = await chrome.storage.session.get(["longSessionWarnedAt", "longSessionKeptGoingAt"]).catch(() => ({}));
+  const warnedAt = sg.longSessionWarnedAt || 0;
+  const keptGoingAt = sg.longSessionKeptGoingAt || 0;
+
+  if (keptGoingAt && Date.now() - keptGoingAt < LONG_SESSION_SNOOZE_MS) return;
+
+  if (!warnedAt) {
+    await chrome.storage.session.set({ longSessionWarnedAt: Date.now() });
+    chrome.notifications.create("locus-long-session", {
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: "Still focusing?",
+      message: `Your session has been running for over ${LONG_SESSION_HOURS} hours. Keep going or end it?`,
+      buttons: [{ title: "Keep Going" }, { title: "End Session" }],
+      requireInteraction: true,
+    });
+    return;
+  }
+
+  if (Date.now() - warnedAt > LONG_SESSION_TIMEOUT_MS) {
+    try { chrome.notifications.clear("locus-long-session"); } catch {}
+    await chrome.storage.session.remove(["longSessionWarnedAt", "longSessionKeptGoingAt"]);
+    if (session?.startedAt) {
+      await logEvent("session_end", { task: session.taskText || "", duration_ms: Date.now() - session.startedAt, reason: "long_session_timeout" });
+    }
+    await setState({ session: null, tempAllow: {}, denialLocks: {} });
+  }
+}
+
+chrome.notifications.onButtonClicked.addListener(async (notifId, btnIdx) => {
+  if (notifId !== "locus-long-session") return;
+  chrome.notifications.clear(notifId);
+  if (btnIdx === 0) {
+    await chrome.storage.session.set({ longSessionKeptGoingAt: Date.now() });
+    await chrome.storage.session.remove("longSessionWarnedAt");
+  } else {
+    const { session } = await getState();
+    if (session?.startedAt) {
+      await logEvent("session_end", { task: session.taskText || "", duration_ms: Date.now() - session.startedAt, reason: "long_session_user_ended" });
+    }
+    await setState({ session: null, tempAllow: {}, denialLocks: {} });
+  }
+});
 
 async function tryCalendarSync() {
   const { calendar } = await getState();

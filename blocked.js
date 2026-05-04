@@ -56,6 +56,8 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   if (r.approved) {
     setStatus(status, `<div class="verdict approved"><strong>Approved.</strong> ${escapeHtml(r.reason)}</div>`);
     setTimeout(proceed, 900);
+  } else if (r.transient) {
+    setStatus(status, `<div class="error">${escapeHtml(r.reason)}</div>`);
   } else {
     showLocked(r.reason);
   }
