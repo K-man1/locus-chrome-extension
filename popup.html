@@ -20,8 +20,6 @@
     .label-uc { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
     .timer { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 28px; color: var(--ink); text-align: center; }
     .task-line { font-size: 13px; color: var(--ink); margin-top: 6px; word-break: break-word; text-align: center; }
-    .task-edit { display: flex; gap: 6px; margin-top: 8px; }
-    .task-edit input { flex: 1; }
     .footer { margin-top: 14px; font-size: 12px; text-align: center; }
     .session-summary { margin-top: 8px; font-size: 11px; color: var(--ink-soft); text-align: center; }
     .timer-block { text-align: center; padding: 6px 0 4px; }
@@ -64,10 +62,6 @@
         <div class="timer" id="timer">00:00</div>
       </div>
       <div class="task-line" id="taskLine"></div>
-      <div class="task-edit">
-        <input type="text" id="taskEdit" placeholder="Edit task…">
-        <button id="saveTask" class="small">Save</button>
-      </div>
       <div class="session-summary" id="sessionSummary"></div>
     </div>
     <button class="danger" id="stopBtn" style="width:100%">End Session</button>

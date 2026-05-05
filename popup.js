@@ -27,8 +27,6 @@ async function render() {
     const taskText = state.session.taskText || "";
     document.getElementById("taskLine").textContent = taskText
       ? `Task: ${taskText}` : "No specific task.";
-    document.getElementById("taskEdit").value = taskText;
-
     const startedAt = state.session.startedAt;
     const tick = () => {
       document.getElementById("timer").textContent = fmtElapsed(Date.now() - startedAt);
@@ -74,13 +72,6 @@ document.getElementById("taskInput").addEventListener("keydown", (e) => {
 
 document.getElementById("stopBtn").addEventListener("click", async () => {
   await send({ type: "stopSession" });
-  await render();
-});
-
-document.getElementById("saveTask").addEventListener("click", async () => {
-  const v = document.getElementById("taskEdit").value.trim();
-  if (!v) return;
-  await send({ type: "updateTask", taskText: v });
   await render();
 });
 
