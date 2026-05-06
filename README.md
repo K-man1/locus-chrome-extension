@@ -4,17 +4,17 @@ This extension is a port of the Locus app ([website](https://getlocusapp.netlify
 Locus is a focus app that uses AI to determine if you are on task or not. It looks at the tabs you visit, and based on what you should be working on, blocks them.
 
 ## Features
-- AI Unblocks
+- **AI Unblocks**
 Unblock websites by explaining why you need them and how they pertain to your task. AI then decides if your reason is valid.
-- Smart Blocking
+- **Smart Blocking**
 Blocks all websites other than the ones on your allow-list and obviously related sites. For example, the AI will not block a google search for "mitosis" during a Science HW session, however it will block "Apple iPhone."
-- Calendar Integration
+- **Calendar Integration**
 Use the public iCal link to your calendar (Google Calendar, Outlook, Schoology, Canvas, etc) to simply select what task you are working on.
-- Drift Detection
+- **Drift Detection**
 Stay on task on certain websites as the AI re-checks websites. For example, if youtube.com was unblocked because I need to watch a science lecture, but I start watching "Jet Lag: The Game," the AI recognize this and reblock the website.
-- Customization
+- **Customization**
 The extension is highly customizable. It is also open-source for developer.
-- Analytics
+- **Analytics**
 Understand your behaviors and tendencies with a detailed analytics tab.
 
 ## How to Install
