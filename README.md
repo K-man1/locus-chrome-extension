@@ -18,7 +18,7 @@ The extension is highly customizable. It is also open-source for developer.
 Understand your behaviors and tendencies with a detailed analytics tab.
 
 ## How to Install
-Right now, the extension is pending approval for the chrom web store. Therefore, for right now you have to follow these steps:
+Right now, the extension is pending approval for the chrome web store. Therefore, for right now you have to follow these steps:
 1. Press the green "Code" button on this Github page.
 2. Download it as a .zip file.
 3. Unzip the file.

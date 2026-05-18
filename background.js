@@ -199,7 +199,8 @@ async function driftSweep() {
     const r = await evaluateTitle({
       domain: host,
       task: session.taskText || "",
-      tabTitle: title
+      tabTitle: title,
+      approvalReason: ta.reason || ""
     });
     if (!r.onTopic) {
       const cur = (await getState()).tempAllow || {};
