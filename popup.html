@@ -26,6 +26,12 @@
     .start-btn { width: 100%; margin-top: 10px; padding: 10px; font-size: 14px; font-weight: 600; }
     .start-btn .play { margin-right: 4px; }
     .or-link { display: block; text-align: center; margin-top: 10px; font-size: 11px; color: var(--ink-soft); }
+    .mode-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 10px; }
+    .mode-btn { flex: 1; padding: 7px 0; font-size: 12px; border: none; border-radius: 0; background: transparent; color: var(--ink-soft); cursor: pointer; transition: background 0.12s; }
+    .mode-btn.active { background: var(--accent); color: #1a1305; font-weight: 600; }
+    .mode-btn:hover:not(.active) { background: var(--border); }
+    .pomo-phase { font-size: 11px; color: var(--ink-soft); text-align: center; margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .pomo-phase.break { color: var(--accent); }
   </style>
 </head>
 <body>
@@ -43,6 +49,10 @@
 
     <div class="label-uc">What are you working on?</div>
     <input type="text" id="taskInput" placeholder="e.g. Write essay intro" autofocus>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeStopwatch">Stopwatch</button>
+      <button class="mode-btn" id="modePomo">Pomodoro 25m</button>
+    </div>
     <button class="primary start-btn" id="startBtn"><span class="play">▶</span> Start Session</button>
     <a href="#" id="openDashUpcoming" class="or-link">OR pick from calendar →</a>
   </div>
@@ -60,6 +70,7 @@
     <div class="card">
       <div class="timer-block">
         <div class="timer" id="timer">00:00</div>
+        <div class="pomo-phase" id="pomoPhase" style="display:none"></div>
       </div>
       <div class="task-line" id="taskLine"></div>
       <div class="session-summary" id="sessionSummary"></div>
