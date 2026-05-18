@@ -41,19 +41,9 @@ async function loadPomodoroEnabled() {
   return !!pomodoroEnabled;
 }
 
-async function savePomodoroEnabled(val) {
-  await chrome.storage.local.set({ pomodoroEnabled: val });
-}
-
-function setPomoBtnState(enabled) {
-  document.getElementById("modeStopwatch").classList.toggle("active", !enabled);
-  document.getElementById("modePomo").classList.toggle("active", enabled);
-}
-
 async function render() {
   const state = await send({ type: "getState" });
   const pomoEnabled = await loadPomodoroEnabled();
-  setPomoBtnState(pomoEnabled);
 
   const idle   = document.getElementById("idle");
   const active = document.getElementById("active");
@@ -150,21 +140,6 @@ document.getElementById("taskInput").addEventListener("keydown", (e) => {
 document.getElementById("stopBtn").addEventListener("click", async () => {
   await send({ type: "stopSession" });
   await render();
-});
-
-document.getElementById("modeStopwatch").addEventListener("click", async () => {
-  await savePomodoroEnabled(false);
-  setPomoBtnState(false);
-  // If session active, re-render to switch display
-  const state = await send({ type: "getState" });
-  if (state.session) await render();
-});
-
-document.getElementById("modePomo").addEventListener("click", async () => {
-  await savePomodoroEnabled(true);
-  setPomoBtnState(true);
-  const state = await send({ type: "getState" });
-  if (state.session) { lastPhase = null; await render(); }
 });
 
 function openDashboard(e) {

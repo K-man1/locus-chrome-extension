@@ -225,6 +225,8 @@ async function renderSettings() {
   document.getElementById("driftSeconds").value = String(state.driftCheckSeconds ?? 15);
   document.getElementById("playSoundOnBlock").checked = !!state.playSoundOnBlock;
   document.getElementById("driftCheckEnabled").checked = !!state.driftCheckEnabled;
+  const { pomodoroEnabled } = await chrome.storage.local.get("pomodoroEnabled");
+  document.getElementById("pomodoroEnabled").checked = !!pomodoroEnabled;
   document.getElementById("overrideCode").value = state.overrideCode || "";
   document.getElementById("promptReason").value = state.prompts?.reason || "";
   document.getElementById("promptSite").value = state.prompts?.site || "";
@@ -270,7 +272,8 @@ document.getElementById("saveGeneral").addEventListener("click", async () => {
     tempAllowMins: tempMins,
     driftCheckSeconds: drift,
     playSoundOnBlock: document.getElementById("playSoundOnBlock").checked,
-    driftCheckEnabled: document.getElementById("driftCheckEnabled").checked
+    driftCheckEnabled: document.getElementById("driftCheckEnabled").checked,
+    pomodoroEnabled: document.getElementById("pomodoroEnabled").checked
   });
   document.documentElement.setAttribute("data-theme", document.getElementById("theme").value);
   const s = document.getElementById("generalStatus");
