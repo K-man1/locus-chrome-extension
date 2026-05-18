@@ -120,8 +120,13 @@
       font-size: 44px; color: var(--ink); margin: 14px 0 6px;
     }
     .active-session .task-line { color: var(--ink); font-size: 16px; margin-bottom: 14px; }
-    .active-session .task-edit { display: flex; gap: 8px; max-width: 420px; margin: 0 auto 14px; }
-    .active-session .task-edit input { flex: 1; }
+    .toggle-row { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; grid-column: 1 / -1; }
+    .toggle-row input[type=checkbox] { display: none; }
+    .toggle-track { width: 46px; height: 26px; background: var(--border); border-radius: 13px; position: relative; transition: background 0.18s; flex: none; }
+    .toggle-row input:checked ~ .toggle-track { background: var(--accent); }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.22); transition: transform 0.18s; }
+    .toggle-row input:checked ~ .toggle-track .toggle-thumb { transform: translateX(20px); }
+    .toggle-label { font-size: 13px; color: var(--ink); }
 
     /* Settings / Connectors / Analytics shared bits */
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -226,11 +231,8 @@
           </div>
           <div class="active-session">
             <div class="timer-big" id="activeTimer">00:00</div>
+            <div id="activePomoPhase" style="display:none; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;"></div>
             <div class="task-line" id="activeTaskLine"></div>
-            <div class="task-edit">
-              <input type="text" id="activeTaskEdit">
-              <button id="activeSaveTask">Save</button>
-            </div>
             <button class="danger" id="activeEndBtn">End Session</button>
             <div class="muted tiny" id="activeSummary" style="margin-top:10px"></div>
           </div>
@@ -282,9 +284,11 @@
             <div class="field">
               <label><input type="checkbox" id="driftCheckEnabled"> Enable smart re-blocking (drift detection)</label>
             </div>
-            <div class="field">
-              <label><input type="checkbox" id="pomodoroEnabled"> Use Pomodoro timer (25 min work / 5 min break)</label>
-            </div>
+            <label class="toggle-row">
+              <input type="checkbox" id="pomodoroEnabled">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label">Use Pomodoro timer (25 min work / 5 min break)</span>
+            </label>
           </div>
           <div class="row" style="margin-top: 10px;">
             <button class="primary" id="saveGeneral">Save</button>

@@ -49,6 +49,26 @@ document.querySelectorAll(".side-nav button").forEach((b) => {
 });
 
 // ── Start pane ─────────────────────────────────────────────────────────
+const POMO_WORK_MS  = 25 * 60 * 1000;
+const POMO_BREAK_MS =  5 * 60 * 1000;
+const POMO_CYCLE_MS = POMO_WORK_MS + POMO_BREAK_MS;
+
+function getPomoPhase(elapsedMs) {
+  const cyclePos = elapsedMs % POMO_CYCLE_MS;
+  const round = Math.floor(elapsedMs / POMO_CYCLE_MS) + 1;
+  if (cyclePos < POMO_WORK_MS) {
+    return { phase: "work", remaining: POMO_WORK_MS - cyclePos, round };
+  }
+  return { phase: "break", remaining: POMO_CYCLE_MS - cyclePos, round };
+}
+
+function fmtCountdown(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
 let timerInterval = null;
 
 function dayBucketLabel(date, today, tomorrow) {
@@ -109,12 +129,24 @@ async function renderStart() {
     const taskText = state.session.taskText || "";
     document.getElementById("activeTaskLine").textContent = taskText
       ? `Task: ${taskText}` : "No specific task.";
-    document.getElementById("activeTaskEdit").value = taskText;
 
+    const { pomodoroEnabled } = await chrome.storage.local.get("pomodoroEnabled");
     const startedAt = state.session.startedAt;
+    const timerEl = document.getElementById("activeTimer");
+    const phaseEl = document.getElementById("activePomoPhase");
+
     const tick = () => {
-      const el = document.getElementById("activeTimer");
-      if (el) el.textContent = fmtElapsed(Date.now() - startedAt);
+      const elapsed = Date.now() - startedAt;
+      if (pomodoroEnabled) {
+        const { phase, remaining, round } = getPomoPhase(elapsed);
+        timerEl.textContent = fmtCountdown(remaining);
+        phaseEl.style.display = "";
+        phaseEl.textContent = phase === "work" ? `Work · Round ${round}` : "Break";
+        phaseEl.style.color = phase === "break" ? "var(--accent)" : "var(--ink-soft)";
+      } else {
+        timerEl.textContent = fmtElapsed(elapsed);
+        phaseEl.style.display = "none";
+      }
     };
     tick();
     if (timerInterval) clearInterval(timerInterval);
@@ -208,13 +240,6 @@ document.getElementById("activeEndBtn").addEventListener("click", async () => {
   await send({ type: "stopSession" });
   renderStart();
 });
-document.getElementById("activeSaveTask").addEventListener("click", async () => {
-  const v = document.getElementById("activeTaskEdit").value.trim();
-  if (!v) return;
-  await send({ type: "updateTask", taskText: v });
-  renderStart();
-});
-
 // ── Settings pane ──────────────────────────────────────────────────────
 async function renderSettings() {
   const state = await getAll();
