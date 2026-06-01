@@ -14,6 +14,19 @@ const GC_ALARM = "locus-gc";
 const CAL_SYNC_ALARM = "locus-cal-sync";
 const SESSION_WATCH_ALARM = "locus-session-watch";
 
+const POMO_WORK_MS  = 25 * 60 * 1000;
+const POMO_BREAK_MS =  5 * 60 * 1000;
+const POMO_CYCLE_MS = POMO_WORK_MS + POMO_BREAK_MS;
+
+function getPomoPhase(elapsedMs) {
+  const cyclePos = elapsedMs % POMO_CYCLE_MS;
+  const round = Math.floor(elapsedMs / POMO_CYCLE_MS) + 1;
+  if (cyclePos < POMO_WORK_MS) {
+    return { phase: "work", remaining: POMO_WORK_MS - cyclePos, round };
+  }
+  return { phase: "break", remaining: POMO_CYCLE_MS - cyclePos, round };
+}
+
 const LONG_SESSION_HOURS = 5;
 const LONG_SESSION_TIMEOUT_MS = 5 * 60 * 1000;
 const LONG_SESSION_SNOOZE_MS = 60 * 60 * 1000;
@@ -37,7 +50,10 @@ async function rescheduleAlarms() {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   try {
     if (alarm.name === GC_ALARM) return await gcTempAllowAndDenials();
-    if (alarm.name === DRIFT_ALARM) return await driftSweep();
+    if (alarm.name === DRIFT_ALARM) {
+      await checkPomoTransition();
+      return await driftSweep();
+    }
     if (alarm.name === CAL_SYNC_ALARM) return await tryCalendarSync();
     if (alarm.name === SESSION_WATCH_ALARM) return await checkLongSession();
   } catch (e) {
@@ -63,7 +79,8 @@ async function gcTempAllowAndDenials() {
 }
 
 // ─── Block decision ───────────────────────────────────────────────────────
-// New rule: while a session is active, block everything except always-allowed.
+// While a session is active, block everything except always-allowed.
+// During a Pomodoro break, allow everything.
 async function shouldBlock(url) {
   if (!url || !/^https?:/i.test(url)) return null;
   let host;
@@ -73,10 +90,73 @@ async function shouldBlock(url) {
   const { session, alwaysAllowed, tempAllow } = await getState();
   if (!session) return null;
 
+  const { pomodoroEnabled } = await chrome.storage.local.get("pomodoroEnabled");
+  if (pomodoroEnabled && session.startedAt) {
+    const { phase } = getPomoPhase(Date.now() - session.startedAt);
+    if (phase === "break") return null;
+  }
+
   if (hostnameMatches(host, alwaysAllowed)) return null;
   if (activeTempAllow(tempAllow, host)) return null;
 
   return { host, task: session.taskText || "" };
+}
+
+async function checkPomoTransition() {
+  const { pomodoroEnabled } = await chrome.storage.local.get("pomodoroEnabled");
+  if (!pomodoroEnabled) return;
+
+  const { session } = await getState();
+  if (!session?.startedAt) return;
+
+  const { phase, round } = getPomoPhase(Date.now() - session.startedAt);
+  const phaseKey = `${phase}-${round}`;
+
+  const sg = await chrome.storage.session.get("pomoLastPhase").catch(() => ({}));
+  const lastPhaseKey = sg?.pomoLastPhase;
+
+  if (lastPhaseKey && lastPhaseKey !== phaseKey) {
+    const msg = phase === "break"
+      ? `Round ${round - 1} done — take a 5-minute break!`
+      : `Break over — start round ${round}!`;
+
+    chrome.notifications.create(`pomo-${phaseKey}`, {
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: "Locus · Pomodoro",
+      message: msg,
+    });
+
+    if (phase === "work") {
+      // Clear break-time browsing when focus resumes
+      await setState({ tempAllow: {}, denialLocks: {} });
+    }
+
+    await playPomoSound(phase);
+  }
+
+  await chrome.storage.session.set({ pomoLastPhase: phaseKey });
+}
+
+async function playPomoSound(phase) {
+  try {
+    const existing = await chrome.offscreen.hasDocument().catch(() => false);
+    if (!existing) {
+      await chrome.offscreen.createDocument({
+        url: chrome.runtime.getURL("offscreen.html"),
+        reasons: ["AUDIO_PLAYBACK"],
+        justification: "Pomodoro phase transition chime",
+      });
+    }
+  } catch {}
+
+  try {
+    await chrome.runtime.sendMessage({ type: "playSound", sound: phase });
+  } catch {}
+
+  setTimeout(async () => {
+    try { await chrome.offscreen.closeDocument(); } catch {}
+  }, 3000);
 }
 
 // Tracks in-progress AI evaluations so onBeforeNavigate + onCommitted
@@ -167,6 +247,13 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 async function driftSweep() {
   const { session, tempAllow, driftCheckEnabled, driftCheckSeconds } = await getState();
   if (!driftCheckEnabled || !session) return;
+
+  const { pomodoroEnabled } = await chrome.storage.local.get("pomodoroEnabled");
+  if (pomodoroEnabled && session.startedAt) {
+    const { phase } = getPomoPhase(Date.now() - session.startedAt);
+    if (phase === "break") return;
+  }
+
   if (!tempAllow || Object.keys(tempAllow).length === 0) return;
 
   const interval = Math.max(10, Number(driftCheckSeconds) || 15) * 1000;
@@ -296,6 +383,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             tempAllow: {},
             denialLocks: {}
           });
+          await chrome.storage.session.remove("pomoLastPhase").catch(() => {});
           await logEvent("session_start", { task: taskText, source: msg.source || "manual" });
           sendResponse({ ok: true });
           break;
@@ -320,6 +408,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             });
           }
           await setState({ session: null, tempAllow: {}, denialLocks: {} });
+          await chrome.storage.session.remove("pomoLastPhase").catch(() => {});
           sendResponse({ ok: true });
           break;
         }

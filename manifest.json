@@ -9,7 +9,8 @@
     "webNavigation",
     "alarms",
     "scripting",
-    "notifications"
+    "notifications",
+    "offscreen"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -76,18 +76,6 @@ async function render() {
           phaseEl.className = "pomo-phase break";
         }
 
-        // Notify once when phase transitions
-        if (lastPhase !== null && lastPhase !== phaseKey) {
-          const msg = phase === "break"
-            ? `Round ${round - 1} done — take a 5-minute break!`
-            : `Break over — start round ${round}!`;
-          chrome.notifications?.create?.(`pomo-${phaseKey}`, {
-            type: "basic",
-            iconUrl: "icons/icon128.png",
-            title: "Locus · Pomodoro",
-            message: msg,
-          });
-        }
         lastPhase = phaseKey;
       } else {
         timerEl.textContent = fmtElapsed(elapsed);
