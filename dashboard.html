@@ -1,9 +1,6 @@
 <!doctype html>
 <html>
 <head>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Oswald:wght@200..700&display=swap" rel="stylesheet">
   <meta charset="utf-8">
   <title>Locus</title>
   <link rel="stylesheet" href="styles.css">
@@ -20,6 +17,10 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
     }
     .side-brand {
       display: flex; align-items: center; gap: 10px;
@@ -33,22 +34,37 @@
       display: flex; align-items: center; justify-content: center;
     }
     .side-brand .lock-mini svg { width: 14px; height: 14px; }
-    .side-brand .wordmark { font-family: "Instrument Serif", serif, serif; font-size: 22px; }
+    .side-brand .wordmark { font-family: var(--serif); font-size: 22px; }
     .side-nav button {
-      display: flex; align-items: center; gap: 10px;
+      position: relative;
+      display: flex; align-items: center; gap: 11px;
       width: 100%; text-align: left;
-      background: transparent; border: 1px solid transparent;
-      padding: 9px 12px; border-radius: 8px;
+      background: transparent; border: none;
+      padding: 10px 12px; border-radius: 8px;
       color: var(--ink-soft); font-weight: 500;
+      transition: background .14s ease, color .14s ease;
     }
-    .side-nav button:hover { background: var(--accent-soft); color: var(--ink); }
-    .side-nav button.active { background: var(--accent-soft); color: var(--ink); border-color: var(--border); font-weight: 600; }
-    .side-nav .nav-icon { width: 16px; height: 16px; flex: none; }
+    .side-nav button:hover { background: var(--card-2); color: var(--ink); }
+    .side-nav button.active { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+    .side-nav button.active::before {
+      content: ""; position: absolute; left: 0; top: 8px; bottom: 8px;
+      width: 3px; border-radius: 3px; background: var(--accent);
+    }
+    .side-nav button.active .nav-icon { color: var(--accent-strong); }
+    .side-nav .nav-icon { width: 17px; height: 17px; flex: none; }
 
     /* Main */
-    .main { padding: 36px 40px 60px; max-width: 760px; text-align: center; margin: 0 auto; }
+    .main { padding: 44px 52px 80px; max-width: 800px; margin: 0 auto; text-align: left; }
     .pane { display: none; }
     .pane.active { display: block; }
+    /* Only the Start pane is a centered hero; everything else reads left-to-right. */
+    #pane-start { text-align: center; max-width: 460px; margin: 0 auto; }
+
+    /* Section rhythm: each h2 after the first opens a new block with a hairline rule. */
+    .pane > h2 { margin: 40px 0 6px; padding-top: 30px; border-top: 1px solid var(--border); }
+    .pane > h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+    #pane-start > * { border-top: none; padding-top: 0; }
+    .pane > h2 + p.tiny { margin-top: 0; margin-bottom: 14px; max-width: 62ch; }
 
     /* Start pane */
     .start-hero { text-align: center; margin: 8px 0 28px; }
@@ -60,7 +76,7 @@
     }
     .start-hero .lock-big svg { width: 42px; height: 42px; }
     .start-hero .wordmark {
-      font-family: "Instrument Serif", serif;
+      font-family: var(--serif);
       font-size: 38px; line-height: 1; margin-bottom: 8px;
     }
     .start-hero .subtitle { color: var(--ink-soft); font-size: 14px; }
@@ -120,12 +136,13 @@
       font-size: 44px; color: var(--ink); margin: 14px 0 6px;
     }
     .active-session .task-line { color: var(--ink); font-size: 16px; margin-bottom: 14px; }
+    .active-session .active-actions { display: flex; gap: 8px; justify-content: center; }
     .toggle-row { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; grid-column: 1 / -1; }
     .toggle-row input[type=checkbox] { display: none; }
-    .toggle-track { width: 46px; height: 26px; background: var(--border); border-radius: 13px; position: relative; transition: background 0.18s; flex: none; }
+    .toggle-track { width: 40px; height: 22px; background: var(--border); border-radius: 11px; position: relative; transition: background 0.18s; flex: none; }
     .toggle-row input:checked ~ .toggle-track { background: var(--accent); }
-    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.22); transition: transform 0.18s; }
-    .toggle-row input:checked ~ .toggle-track .toggle-thumb { transform: translateX(20px); }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.28); transition: transform 0.18s; }
+    .toggle-row input:checked ~ .toggle-track .toggle-thumb { transform: translateX(18px); }
     .toggle-label { font-size: 13px; color: var(--ink); }
 
     /* Settings / Connectors / Analytics shared bits */
@@ -134,19 +151,190 @@
     .field { display: flex; flex-direction: column; }
     textarea.prompt { min-height: 160px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
     .feed-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
-    .stat-card { padding: 14px; }
-    .stat-card .num { font-size: 26px; font-family: "Iowan Old Style", Palatino, Georgia, serif; }
-    .stat-card .lbl { font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; }
-    .bar-row { margin: 4px 0; }
-    .bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); }
-    .bar { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; height: 10px; overflow: hidden; }
-    .bar-fill { background: var(--accent); height: 100%; }
-    .stat { display: flex; justify-content: space-between; padding: 4px 0; }
-    .stat .v { font-weight: 600; }
+    .stat-card { padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .stat-card .num {
+      font-size: 36px; line-height: 1;
+      font-family: var(--serif); color: var(--ink);
+    }
+    .stat-card .lbl {
+      font-size: 11px; color: var(--ink-faint); text-transform: uppercase;
+      letter-spacing: 0.12em; font-weight: 600; order: -1;
+    }
+    .bar-row { margin: 8px 0; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); margin-bottom: 3px; }
+    .bar { background: var(--card-2); border-radius: 5px; height: 9px; overflow: hidden; }
+    .bar-fill { background: var(--accent); height: 100%; border-radius: 5px; }
+    .stat { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .stat:last-child { border-bottom: none; }
+    .stat .v { font-weight: 600; font-variant-numeric: tabular-nums; }
     .feed-error { color: var(--danger); font-size: 12px; margin-top: 6px; }
     .small { padding: 4px 10px; font-size: 12px; }
     .empty-hint { color: var(--ink-soft); font-size: 13px; }
     .empty-hint a { color: var(--accent); cursor: pointer; }
+
+    /* Schedule pane */
+    .day-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+    .day-btn {
+      padding: 6px 11px; border: 1px solid var(--border); border-radius: 8px;
+      background: transparent; color: var(--ink-soft); font-size: 12px; cursor: pointer;
+    }
+    .day-btn:hover { border-color: var(--accent); }
+    .day-btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 600; }
+    .sched-item { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+    .sched-meta { text-align: left; min-width: 0; }
+    .sched-title { font-weight: 600; color: var(--ink); word-break: break-word; }
+    .sched-sub { color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+    .sched-actions { display: flex; align-items: center; gap: 12px; flex: none; }
+    .sched-actions .toggle-row { grid-column: auto; }
+
+    /* Native checkboxes tinted yellow; checkbox labels sit inline. */
+    input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); flex: none; cursor: pointer; }
+    .field label:has(> input[type=checkbox]) {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 13px; color: var(--ink); cursor: pointer; margin-bottom: 0;
+    }
+    .grid2, .grid3 { gap: 14px; }
+    .grid2 .field, .grid3 .field { text-align: left; }
+    /* Checkbox rows shouldn't be squeezed into a text column. */
+    .field:has(> label > input[type=checkbox]) { justify-content: center; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary h2 { cursor: pointer; }
+    details[open] > summary h2::after { content: " ▾"; color: var(--ink-faint); font-size: 14px; }
+    details:not([open]) > summary h2::after { content: " ▸"; color: var(--ink-faint); font-size: 14px; }
+
+    /* Schedule form */
+    .form-card .field { margin-bottom: 14px; text-align: left; }
+    .sched-form-grid { display: grid; grid-template-columns: 1fr 160px; gap: 16px; align-items: start; }
+    .sched-form-grid input[type=time] { max-width: 160px; }
+
+    /* Analytics — charts */
+    .kpi-row { margin-bottom: 4px; }
+    .chart-card { padding: 18px 18px 14px; }
+    .chart-wrap svg { display: block; width: 100%; height: auto; }
+    .chart-caption { font-size: 12px; color: var(--ink-soft); margin-top: 10px; text-align: center; }
+    .an-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+    .an-two .card { margin-bottom: 0; }
+
+    /* Donut + legend */
+    .donut-block { display: flex; align-items: center; gap: 20px; padding: 4px 2px 14px; }
+    .donut-wrap { flex: none; width: 116px; }
+    .donut-wrap svg { display: block; width: 116px; height: 116px; }
+    .donut-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+    .lg-row { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-soft); }
+    .lg-name { flex: 1; }
+    .lg-val { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .lg-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+    .lg-dot.approved { background: var(--ok); }
+    .lg-dot.denied { background: var(--danger); }
+    .lg-dot.neutral { background: var(--ink-faint); }
+
+    /* Top blocked sites — ranked bars */
+    .domain-list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+    .dbar { position: relative; }
+    .dbar-track { position: relative; height: 30px; border-radius: 7px; background: var(--card-2); overflow: hidden; }
+    .dbar-fill { position: absolute; inset: 0 auto 0 0; background: var(--accent-soft); border-right: 2px solid var(--accent); border-radius: 7px 0 0 7px; }
+    .dbar-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 11px; font-size: 12.5px; }
+    .dbar-host { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dbar-n { color: var(--ink-soft); font-weight: 600; font-variant-numeric: tabular-nums; padding-left: 8px; }
+    .an-empty { color: var(--ink-faint); font-size: 13px; padding: 20px 4px; text-align: center; }
+
+    /* Unified boolean settings — one switch style, one row layout. */
+    .toggle-list { margin-top: 6px; border-top: 1px solid var(--border); }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 13px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer; text-align: left;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .sr-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .sr-label { font-size: 13.5px; color: var(--ink); font-weight: 500; }
+    .sr-sub { font-size: 12px; color: var(--ink-soft); }
+
+    .sw { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
+    .sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+    .sw-track { position: absolute; inset: 0; background: var(--border); border-radius: 11px; transition: background .18s; }
+    .sw-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.28); transition: transform .18s; }
+    .sw input:checked ~ .sw-track { background: var(--accent); }
+    .sw input:checked ~ .sw-track .sw-thumb { transform: translateX(18px); }
+
+    /* Chip lists (always-allowed domains, quick tasks, hidden sites) */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .chips:empty { display: none; }
+    .chip { display: inline-flex; align-items: center; background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--ink); padding: 4px 6px 4px 11px; border-radius: 999px; font-size: 12.5px; }
+    .chip .x { margin-left: 4px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--ink-soft); cursor: pointer; font-size: 13px; line-height: 1; }
+    .chip .x:hover { color: var(--danger); background: var(--danger-soft); }
+    .chips-empty { color: var(--ink-faint); font-size: 12.5px; margin-bottom: 10px; }
+    .add-row { display: flex; gap: 8px; }
+    .add-row input { flex: 1; }
+
+    /* ── Modal dialog (lockdown setup) ─────────────────────────────────── */
+    .modal-back {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(20, 17, 10, 0.44);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-back[hidden] { display: none; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%; max-width: 520px;
+      max-height: calc(100vh - 48px);
+      display: flex; flex-direction: column;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+    }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px 12px; border-bottom: 1px solid var(--border);
+    }
+    .modal-head h3 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; }
+    .modal-x {
+      border: none; background: transparent; color: var(--ink-soft);
+      font-size: 22px; line-height: 1; padding: 2px 8px; cursor: pointer;
+    }
+    .modal-x:hover { background: transparent; color: var(--ink); border-color: transparent; }
+    /* The body scrolls, so the header and the actions stay reachable on a short window. */
+    .modal-body { padding: 16px 18px; overflow-y: auto; }
+    .modal-body .field { margin-bottom: 14px; }
+    .modal-sec {
+      margin: 22px 0 10px; padding-top: 14px; border-top: 1px solid var(--border);
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint);
+    }
+    .modal-foot {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 18px 16px; border-top: 1px solid var(--border);
+    }
+    .modal-actions { display: flex; gap: 8px; flex: none; }
+    #lockModalErr { color: var(--danger); }
+    /* Sub-settings collapse when their parent toggle is off. */
+    .lock-pomo-len[hidden], .lock-allow-wrap[hidden] { display: none; }
+    /* One-line "8:00 AM – 5:00 PM · Weekdays · 3 tasks" digest on the card. */
+    .lock-summary { color: var(--ink-soft); font-size: 13px; margin-top: 10px; }
+    .lock-summary .lock-sum-strict { color: var(--ink-faint); font-size: 12px; margin-top: 3px; }
+
+    /* Pomodoro length inputs — one small numeric box each. */
+    .len { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); font-size: 13px; flex: none; }
+    .len input { width: 62px; text-align: center; padding: 7px 8px; }
+
+    /* Sub-setting (Pomodoro length) — indented, disabled until Pomodoro is on. */
+    .sub-setting { cursor: default; padding-left: 2px; }
+    .sub-setting.disabled { opacity: .4; pointer-events: none; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex: none; }
+    .seg button {
+      border: none; border-radius: 0; border-left: 1px solid var(--border);
+      background: transparent; color: var(--ink-soft);
+      padding: 6px 13px; font-size: 13px; font-variant-numeric: tabular-nums;
+    }
+    .seg button:first-child { border-left: none; }
+    .seg button:hover { background: var(--card-2); }
+    .seg button.on { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+
+    @media (max-width: 680px) {
+      .an-two { grid-template-columns: 1fr; }
+      .sched-form-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -166,6 +354,15 @@
         <button data-pane="start" class="active">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"></polygon></svg>
           <span>Start</span>
+        </button>
+        <button data-pane="schedule">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Schedule</span>
         </button>
         <button data-pane="settings">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -233,7 +430,10 @@
             <div class="timer-big" id="activeTimer">00:00</div>
             <div id="activePomoPhase" style="display:none; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;"></div>
             <div class="task-line" id="activeTaskLine"></div>
-            <button class="danger" id="activeEndBtn">End Session</button>
+            <div class="active-actions">
+              <button id="activePauseBtn">Pause</button>
+              <button class="danger" id="activeEndBtn">End Session</button>
+            </div>
             <div class="muted tiny" id="activeSummary" style="margin-top:10px"></div>
           </div>
         </div>
@@ -242,12 +442,12 @@
       <!-- Settings pane -->
       <section id="pane-settings" class="pane">
         <h2>Always-allowed domains</h2>
-        <p class="muted tiny">Domains never blocked. Everything else is blocked while a session is active. One per line.</p>
+        <p class="muted tiny">Domains never blocked. Everything else is blocked while a session is active. Sign-in and OAuth pages are always allowed automatically.</p>
         <div class="card">
-          <textarea id="alwaysAllowedText" rows="6" placeholder="docs.google.com&#10;khanacademy.org"></textarea>
-          <div class="row" style="margin-top:8px">
-            <button class="primary" id="saveAlwaysAllowed">Save</button>
-            <span id="alwaysAllowedStatus" class="tiny muted"></span>
+          <div id="allowedChips" class="chips"></div>
+          <div class="add-row">
+            <input type="text" id="allowedInput" placeholder="e.g. khanacademy.org" autocomplete="off">
+            <button id="allowedAdd">Add</button>
           </div>
         </div>
 
@@ -274,36 +474,53 @@
               <label>Temporary allow duration (minutes)</label>
               <input type="text" id="tempAllowMins">
             </div>
-            <div class="field">
-              <label>Drift check interval (seconds)</label>
-              <input type="text" id="driftSeconds">
-            </div>
-            <div class="field">
-              <label><input type="checkbox" id="playSoundOnBlock"> Play a sound on block</label>
-            </div>
-            <div class="field">
-              <label><input type="checkbox" id="driftCheckEnabled"> Enable smart re-blocking (drift detection)</label>
-            </div>
-            <label class="toggle-row">
-              <input type="checkbox" id="pomodoroEnabled">
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              <span class="toggle-label">Use Pomodoro timer (25 min work / 5 min break)</span>
+          </div>
+
+          <div class="toggle-list">
+            <label class="setting-row">
+              <span class="sr-text">
+                <span class="sr-label">Quick-focus button on web pages</span>
+                <span class="sr-sub">A floating button — shows your timer while focusing, hover to start from any page</span>
+              </span>
+              <span class="sw"><input type="checkbox" id="quickFocusButton"><span class="sw-track"><span class="sw-thumb"></span></span></span>
             </label>
+            <label class="setting-row">
+              <span class="sr-text">
+                <span class="sr-label">Play a sound on block</span>
+                <span class="sr-sub">Chime when a site gets blocked</span>
+              </span>
+              <span class="sw"><input type="checkbox" id="playSoundOnBlock"><span class="sw-track"><span class="sw-thumb"></span></span></span>
+            </label>
+            <label class="setting-row">
+              <span class="sr-text">
+                <span class="sr-label">Smart re-blocking</span>
+                <span class="sr-sub">Re-block temporarily-allowed tabs that drift off task</span>
+              </span>
+              <span class="sw"><input type="checkbox" id="driftCheckEnabled"><span class="sw-track"><span class="sw-thumb"></span></span></span>
+            </label>
+            <label class="setting-row">
+              <span class="sr-text">
+                <span class="sr-label">Pomodoro timer</span>
+                <span class="sr-sub">Alternate focused work with breaks</span>
+              </span>
+              <span class="sw"><input type="checkbox" id="pomodoroEnabled"><span class="sw-track"><span class="sw-thumb"></span></span></span>
+            </label>
+            <div class="setting-row sub-setting pomo-len" hidden>
+              <span class="sr-text"><span class="sr-label">Work length</span></span>
+              <span class="len"><input type="text" id="pomoWorkMin" inputmode="numeric" autocomplete="off"> min</span>
+            </div>
+            <div class="setting-row sub-setting pomo-len" hidden>
+              <span class="sr-text"><span class="sr-label">Break length</span></span>
+              <span class="len"><input type="text" id="pomoBreakMin" inputmode="numeric" autocomplete="off"> min</span>
+            </div>
           </div>
-          <div class="row" style="margin-top: 10px;">
-            <button class="primary" id="saveGeneral">Save</button>
-            <span id="generalStatus" class="tiny muted"></span>
-          </div>
+
         </div>
 
         <h2 style="margin-top:18px">Override code</h2>
-        <p class="muted tiny">Fallback escape hatch. Pick something tedious so future-you actually thinks before using it.</p>
+        <p class="muted tiny">Fallback escape hatch. Pick something tedious so future-you actually thinks before using it. On the blocked page you must press and hold Override for 5 seconds.</p>
         <div class="card">
           <input type="text" id="overrideCode" autocomplete="off">
-          <div class="row" style="margin-top: 8px;">
-            <button class="primary" id="saveOverride">Save</button>
-            <span id="overrideStatus" class="tiny muted"></span>
-          </div>
         </div>
 
         <details style="margin-top:18px">
@@ -322,11 +539,55 @@
             <textarea class="prompt" id="promptTitle" placeholder="(default)"></textarea>
           </div>
           <div class="row">
-            <button class="primary" id="savePrompts">Save prompts</button>
             <button id="resetPrompts">Reset to defaults</button>
             <span id="promptStatus" class="tiny muted"></span>
           </div>
         </details>
+      </section>
+
+      <!-- Schedule pane -->
+      <section id="pane-schedule" class="pane">
+        <h2>Scheduled sessions</h2>
+        <p class="tiny muted">Locus automatically starts a focus session on the days and time you choose. Set a task once and it runs on repeat — e.g. "Math HW" every Mon &amp; Thu at 3:00 PM.</p>
+
+        <div class="card form-card">
+          <div class="field">
+            <label>Task</label>
+            <input type="text" id="schTask" placeholder="e.g. Math HW">
+          </div>
+          <div class="sched-form-grid">
+            <div class="field">
+              <label>Days</label>
+              <div class="day-picker" id="schDays"></div>
+            </div>
+            <div class="field">
+              <label>Time</label>
+              <input type="time" id="schTime" value="15:00">
+            </div>
+          </div>
+          <div class="row">
+            <button class="primary" id="addSchedule">Add schedule</button>
+            <span id="schStatus" class="tiny muted"></span>
+          </div>
+        </div>
+
+        <h2>Your schedules</h2>
+        <div id="scheduleList"></div>
+
+        <h2>Lockdown</h2>
+        <p class="tiny muted">A commitment device. During the window Locus force-runs a focus session on one of the tasks you pick and won't let you pause, end, or disable it. It can also run at its own harshness, timer and allowlist for the duration, then hand your normal settings back. Once a window starts you're in until it ends — editing mid-window won't release you, and the settings stay frozen until it does. The only escape is disabling the extension.</p>
+        <div class="card">
+          <label class="toggle-row" style="margin-bottom:4px">
+            <input type="checkbox" id="lockdownEnabled">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-label">Enable scheduled lockdown</span>
+          </label>
+          <div class="lock-summary" id="lockSummary"></div>
+          <div class="row" style="margin-top:12px; gap:10px;">
+            <button id="lockEditBtn">Edit lockdown…</button>
+            <span id="lockdownStatus" class="tiny muted"></span>
+          </div>
+        </div>
       </section>
 
       <!-- Connectors pane -->
@@ -351,35 +612,128 @@
       <!-- Analytics pane -->
       <section id="pane-analytics" class="pane">
         <h2>Focus</h2>
-        <div class="grid3">
+        <div class="grid3 kpi-row">
           <div class="card stat-card"><div class="lbl">Today</div><div class="num" id="focusToday">—</div></div>
           <div class="card stat-card"><div class="lbl">This week</div><div class="num" id="focusWeek">—</div></div>
           <div class="card stat-card"><div class="lbl">Streak</div><div class="num" id="streak">—</div></div>
         </div>
 
-        <h2 style="margin-top:18px">Blocking</h2>
-        <div class="grid3">
-          <div class="card stat-card"><div class="lbl">Attempts</div><div class="num" id="blockAttempts">—</div></div>
-          <div class="card stat-card"><div class="lbl">AI approved</div><div class="num" id="blockApproved">—</div></div>
-          <div class="card stat-card"><div class="lbl">AI denied</div><div class="num" id="blockDenied">—</div></div>
-        </div>
-        <div class="card">
-          <div class="stat"><span>Drift revocations</span><span class="v" id="driftRevoked">—</span></div>
-          <div class="stat"><span>Sessions today</span><span class="v" id="sessionsToday">—</span></div>
+        <h2>Last 14 days</h2>
+        <div class="card chart-card">
+          <div id="focusChart" class="chart-wrap"></div>
+          <div id="focusChartCaption" class="chart-caption"></div>
         </div>
 
-        <h2 style="margin-top:18px">Last 14 days</h2>
-        <div class="card"><div id="dailyBars"></div></div>
+        <h2>Blocking</h2>
+        <div class="an-two">
+          <div class="card">
+            <div class="donut-block">
+              <div id="blockDonut" class="donut-wrap"></div>
+              <div class="donut-legend">
+                <div class="lg-row"><span class="lg-dot approved"></span><span class="lg-name">Approved</span><span class="lg-val" id="blockApproved">—</span></div>
+                <div class="lg-row"><span class="lg-dot denied"></span><span class="lg-name">Denied</span><span class="lg-val" id="blockDenied">—</span></div>
+                <div class="lg-row"><span class="lg-dot neutral"></span><span class="lg-name">Attempts</span><span class="lg-val" id="blockAttempts">—</span></div>
+              </div>
+            </div>
+            <div class="stat"><span>Drift revocations</span><span class="v" id="driftRevoked">—</span></div>
+            <div class="stat"><span>Sessions today</span><span class="v" id="sessionsToday">—</span></div>
+          </div>
+          <div class="card">
+            <div class="label-uc">Top blocked sites</div>
+            <div id="topDomains" class="domain-list"></div>
+          </div>
+        </div>
 
-        <h2 style="margin-top:18px">Top blocked domains</h2>
-        <div class="card"><div id="topDomains" class="muted tiny">—</div></div>
-
-        <div class="row" style="margin-top:8px">
+        <div class="row" style="margin-top:20px">
           <button class="danger small" id="clearAnalytics">Clear analytics history</button>
           <span id="clearStatus" class="tiny muted"></span>
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Lockdown setup. A dialog rather than an inline form: it carries its own
+       copy of the strictness settings, which is far too much to leave sitting
+       open on the Schedule pane, and the commit is deliberate (Save/Cancel)
+       instead of autosaving you into a commitment device. -->
+  <div class="modal-back" id="lockModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lockModalTitle">
+      <div class="modal-head">
+        <h3 id="lockModalTitle">Lockdown setup</h3>
+        <button class="modal-x" id="lockModalClose" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="sched-form-grid">
+          <div class="field">
+            <label>Start</label>
+            <input type="time" id="lockStart">
+          </div>
+          <div class="field">
+            <label>End</label>
+            <input type="time" id="lockEnd">
+          </div>
+        </div>
+        <div class="field">
+          <label>Days</label>
+          <div class="day-picker" id="lockDays"></div>
+        </div>
+        <div class="field">
+          <label>Tasks (one per line — you pick between these while locked)</label>
+          <textarea id="lockTasks" rows="3"></textarea>
+        </div>
+
+        <div class="modal-sec">While locked</div>
+        <p class="tiny muted" style="margin-top:-4px">These replace your normal settings for the length of the window, then hand back automatically.</p>
+
+        <label class="toggle-row" style="margin:12px 0 4px">
+          <input type="checkbox" id="lockPomoEnabled">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="toggle-label">Pomodoro timer</span>
+        </label>
+        <div class="sched-form-grid lock-pomo-len">
+          <div class="field">
+            <label>Work (min)</label>
+            <input type="number" id="lockPomoWork" min="1" step="1">
+          </div>
+          <div class="field">
+            <label>Break (min)</label>
+            <input type="number" id="lockPomoBreak" min="1" step="1">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Harshness</label>
+          <select id="lockHarshness">
+            <option value="Lenient">Lenient</option>
+            <option value="Standard">Standard</option>
+            <option value="Strict">Strict</option>
+          </select>
+        </div>
+
+        <label class="toggle-row" style="margin:14px 0 4px">
+          <input type="checkbox" id="lockAllowCustom">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="toggle-label">Tighter allowlist while locked</span>
+        </label>
+        <div class="lock-allow-wrap">
+          <p class="tiny muted">Only these domains stay unblocked during the window. Off means your normal allowlist applies.</p>
+          <div class="chips" id="lockAllowChips"></div>
+          <div class="row" style="margin-top:8px; gap:8px">
+            <input type="text" id="lockAllowInput" placeholder="e.g. docs.google.com">
+            <button id="lockAllowAdd">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <span id="lockModalErr" class="tiny"></span>
+        <div class="modal-actions">
+          <button id="lockModalCancel">Cancel</button>
+          <button class="primary" id="lockModalSave">Save</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="dashboard.js" type="module"></script>

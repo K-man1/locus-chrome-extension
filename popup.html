@@ -14,9 +14,9 @@
       color: var(--ink);
     }
     .lock-icon svg { width: 22px; height: 22px; }
-    .brand-block { text-align: center; margin-bottom: 14px; }
-    .brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 22px; }
-    .subtitle { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+    .brand-block { text-align: center; margin-bottom: 16px; }
+    .brand { font-family: var(--serif); font-size: 30px; line-height: 1; letter-spacing: -0.01em; }
+    .subtitle { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
     .label-uc { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
     .timer { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 28px; color: var(--ink); text-align: center; }
     .task-line { font-size: 13px; color: var(--ink); margin-top: 6px; word-break: break-word; text-align: center; }
@@ -28,6 +28,23 @@
     .or-link { display: block; text-align: center; margin-top: 10px; font-size: 11px; color: var(--ink-soft); }
     .pomo-phase { font-size: 11px; color: var(--ink-soft); text-align: center; margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
     .pomo-phase.break { color: var(--accent); }
+    .active-actions { display: flex; gap: 8px; }
+    .active-actions button { flex: 1; }
+    .lock-panel { margin-top: 12px; }
+    .lock-note {
+      font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--accent); text-align: center; margin-bottom: 10px;
+    }
+    .lock-tasks { display: flex; flex-direction: column; gap: 6px; }
+    .lock-tasks button {
+      width: 100%; text-align: left; padding: 9px 12px; font-size: 13px;
+      border: 1px solid var(--line, #ddd); border-radius: 8px;
+      background: transparent; color: var(--ink); cursor: pointer;
+    }
+    .lock-tasks button.current {
+      border-color: var(--ink); font-weight: 600; cursor: default;
+    }
+    .lock-tasks button.current::before { content: "● "; color: var(--accent); }
   </style>
 </head>
 <body>
@@ -67,7 +84,15 @@
       <div class="task-line" id="taskLine"></div>
       <div class="session-summary" id="sessionSummary"></div>
     </div>
-    <button class="danger" id="stopBtn" style="width:100%">End Session</button>
+    <div class="lock-panel" id="lockPanel" style="display:none">
+      <div class="lock-note" id="lockNote"></div>
+      <div class="label-uc">Focus on</div>
+      <div class="lock-tasks" id="lockTasks"></div>
+    </div>
+    <div class="active-actions" id="activeActions">
+      <button id="pauseBtn">Pause</button>
+      <button class="danger" id="stopBtn">End Session</button>
+    </div>
   </div>
 
   <div class="footer">

@@ -8,17 +8,17 @@
   <style>
     body { padding: 0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
     .wrap { max-width: 560px; width: 100%; padding: 40px 28px; }
-    .brand { font-family: "Instrument Serif", serif; font-size: 28px; margin-bottom: 4px; }
-    .session-tag { display: inline-block; background: var(--accent-soft); color: #6e4d0a; padding: 4px 10px; border-radius: 999px; font-size: 12px; margin-bottom: 18px; }
+    .brand { font-family: var(--serif); font-size: 28px; margin-bottom: 4px; }
+    .session-tag { display: inline-block; background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--ink); padding: 4px 12px; border-radius: 999px; font-size: 12px; margin-bottom: 18px; }
     .url { font-family: ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; color: var(--ink); background: var(--card); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
     .actions { display: flex; gap: 8px; margin-top: 12px; }
     .actions button { flex: 1; }
     details { margin-top: 18px; }
     summary { cursor: pointer; color: var(--ink-soft); font-size: 13px; }
     .verdict { padding: 12px; border-radius: 8px; margin-top: 12px; }
-    .verdict.approved { background: #ebf5e7; color: #2c5825; border: 1px solid #c8e0bf; }
+    .verdict.approved { background: rgba(63,122,55,0.12); color: var(--ok); border: 1px solid rgba(63,122,55,0.38); }
     .verdict.denied { background: var(--card); color: var(--ink); border: 1px solid var(--border); }
-    .verdict.drift { background: #fff4dc; color: #6e4d0a; border: 1px solid #ecd6a4; }
+    .verdict.drift { background: var(--accent-soft); color: var(--ink); border: 1px solid var(--accent-line); }
     .denial-big {
       background: var(--card); color: var(--ink); border: 1px solid var(--border);
       padding: 16px; border-radius: 10px; margin-top: 12px;
@@ -32,15 +32,29 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     [hidden] { display: none !important; }
+
+    /* Hold-to-override button: a fill sweeps across over 5s while pressed. */
+    .hold-btn {
+      position: relative; overflow: hidden; width: 100%;
+      user-select: none; -webkit-user-select: none; touch-action: none;
+    }
+    .hold-fill {
+      position: absolute; top: 0; left: 0; bottom: 0; width: 0%;
+      background: var(--accent-soft); border-right: 2px solid var(--accent);
+      pointer-events: none;
+    }
+    .hold-btn.holding { border-color: var(--accent); }
+    .hold-label { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
   <div class="wrap">
 
-    <h1 id="heading">This site isn't on your allowlist.</h1>
+    <h1 id="heading">This site has been blocked.</h1>
     <p>You're focusing on <strong id="taskName"></strong>. <span id="taskLine"></span></p>
 
     <div id="driftBox" hidden></div>
+    <div id="askReasonBox" class="verdict denied" hidden></div>
 
     <div class="card">
       <label>Blocked URL</label>
@@ -72,13 +86,16 @@
         <label for="code">Override code</label>
         <input type="password" id="code" autocomplete="off" placeholder="Enter your override code">
         <div class="actions">
-          <button id="overrideBtn">Override</button>
+          <button id="overrideBtn" class="hold-btn" type="button">
+            <span class="hold-fill" id="holdFill"></span>
+            <span class="hold-label" id="holdLabel">Hold to override (5s)</span>
+          </button>
         </div>
         <div id="overrideStatus"></div>
       </div>
     </details>
   </div>
 
-  <script src="blocked.js"></script>
+  <script src="blocked.js" type="module"></script>
 </body>
 </html>

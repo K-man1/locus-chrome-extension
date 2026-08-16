@@ -1,49 +1,22 @@
-// Compact popup. Idle: task input + Start. Active: timer + task line + End.
+// Compact popup. Idle: task input + Start. Active: timer + task line + Pause/End.
+
+import { fmtElapsed, fmtCountdown } from "./lib/format.js";
+import { getPomoPhase, sessionElapsed, isPaused } from "./lib/pomodoro.js";
 
 function send(msg) {
   return new Promise((res) => chrome.runtime.sendMessage(msg, res));
 }
 
-function fmtElapsed(ms) {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const pad = (n) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
-}
-
-function fmtCountdown(ms) {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
-
-const POMO_WORK_MS  = 25 * 60 * 1000;
-const POMO_BREAK_MS =  5 * 60 * 1000;
-const POMO_CYCLE_MS = POMO_WORK_MS + POMO_BREAK_MS;
-
-function getPomoPhase(elapsedMs) {
-  const cyclePos = elapsedMs % POMO_CYCLE_MS;
-  const round = Math.floor(elapsedMs / POMO_CYCLE_MS) + 1;
-  if (cyclePos < POMO_WORK_MS) {
-    return { phase: "work", remaining: POMO_WORK_MS - cyclePos, round };
-  }
-  return { phase: "break", remaining: POMO_CYCLE_MS - cyclePos, round };
-}
-
 let timerInterval = null;
-let lastPhase = null; // track transitions to notify once
-
-async function loadPomodoroEnabled() {
-  const { pomodoroEnabled } = await chrome.storage.local.get("pomodoroEnabled");
-  return !!pomodoroEnabled;
-}
 
 async function render() {
   const state = await send({ type: "getState" });
-  const pomoEnabled = await loadPomodoroEnabled();
+  // `effective` carries the lockdown's overrides while a lock is running, so
+  // the popup shows the lock's timer, not the user's normal one.
+  const eff = state.effective || state;
+  const pomoEnabled = !!eff.pomodoroEnabled;
+  const pomoWorkMin = eff.pomodoroWorkMin || 25;
+  const pomoBreakMin = eff.pomodoroBreakMin || 5;
 
   const idle   = document.getElementById("idle");
   const active = document.getElementById("active");
@@ -56,42 +29,46 @@ async function render() {
     document.getElementById("taskLine").textContent = taskText
       ? `Task: ${taskText}` : "No specific task.";
 
-    const startedAt  = state.session.startedAt;
-    const timerEl    = document.getElementById("timer");
-    const phaseEl    = document.getElementById("pomoPhase");
+    const session = state.session;
+    renderLock(state, session);
+    const paused  = isPaused(session);
+    const timerEl = document.getElementById("timer");
+    const phaseEl = document.getElementById("pomoPhase");
+    document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
 
     const tick = () => {
-      const elapsed = Date.now() - startedAt;
+      const elapsed = sessionElapsed(session);
       if (pomoEnabled) {
-        const { phase, remaining, round } = getPomoPhase(elapsed);
+        const { phase, remaining, round } = getPomoPhase(elapsed, pomoWorkMin, pomoBreakMin);
         timerEl.textContent = fmtCountdown(remaining);
-
-        const phaseKey = `${phase}-${round}`;
         phaseEl.style.display = "";
-        if (phase === "work") {
+        if (paused) {
+          phaseEl.textContent = "Paused";
+          phaseEl.className = "pomo-phase";
+        } else if (phase === "work") {
           phaseEl.textContent = `Work · Round ${round}`;
           phaseEl.className = "pomo-phase";
         } else {
           phaseEl.textContent = "Break";
           phaseEl.className = "pomo-phase break";
         }
-
-        lastPhase = phaseKey;
       } else {
         timerEl.textContent = fmtElapsed(elapsed);
-        phaseEl.style.display = "none";
-        lastPhase = null;
+        phaseEl.className = "pomo-phase";
+        phaseEl.style.display = paused ? "" : "none";
+        if (paused) phaseEl.textContent = "Paused";
       }
     };
 
     tick();
     if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(tick, 1000);
+    // No need to tick while frozen; just show the static paused state.
+    timerInterval = paused ? null : setInterval(tick, 1000);
 
     const events = (state.analytics?.events) || [];
     let attempts = 0, approved = 0;
     for (const ev of events) {
-      if (!ev.ts || ev.ts < startedAt) continue;
+      if (!ev.ts || ev.ts < session.startedAt) continue;
       if (ev.type === "block_attempt") attempts++;
       else if (ev.type === "block_approved") approved++;
     }
@@ -103,10 +80,48 @@ async function render() {
     idle.style.display   = "block";
     active.style.display = "none";
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-    lastPhase = null;
     const inp = document.getElementById("taskInput");
     if (inp && document.activeElement !== inp) inp.focus();
   }
+}
+
+// When a lockdown is in force, swap the Pause/End controls for a task switcher
+// limited to the allowed tasks, and show when the lock lifts.
+function renderLock(state, session) {
+  const panel = document.getElementById("lockPanel");
+  const actions = document.getElementById("activeActions");
+  const locked = !!(session.locked && session.lockedUntil && session.lockedUntil > Date.now());
+
+  if (!locked) {
+    panel.style.display = "none";
+    actions.style.display = "flex";
+    return;
+  }
+
+  actions.style.display = "none";
+  panel.style.display = "block";
+  document.getElementById("lockNote").textContent = `Locked until ${fmtClock(session.lockedUntil)}`;
+
+  const tasks = state.lockdown?.tasks || [];
+  const listEl = document.getElementById("lockTasks");
+  listEl.innerHTML = "";
+  for (const t of tasks) {
+    const b = document.createElement("button");
+    b.textContent = t;
+    if (t === session.taskText) {
+      b.className = "current";
+    } else {
+      b.addEventListener("click", async () => {
+        await send({ type: "updateTask", taskText: t });
+        await render();
+      });
+    }
+    listEl.appendChild(b);
+  }
+}
+
+function fmtClock(ms) {
+  return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 async function startSession() {
@@ -116,13 +131,17 @@ async function startSession() {
     return;
   }
   await send({ type: "startSession", taskText, source: "manual" });
-  lastPhase = null;
   await render();
 }
 
 document.getElementById("startBtn").addEventListener("click", startSession);
 document.getElementById("taskInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") startSession();
+});
+
+document.getElementById("pauseBtn").addEventListener("click", async () => {
+  await send({ type: "togglePause" });
+  await render();
 });
 
 document.getElementById("stopBtn").addEventListener("click", async () => {

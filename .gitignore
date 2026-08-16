@@ -1,0 +1,5 @@
+# Local secrets — see lib/secrets.example.js
+lib/secrets.local.js
+
+# macOS
+.DS_Store

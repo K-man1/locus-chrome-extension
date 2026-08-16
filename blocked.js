@@ -1,8 +1,12 @@
+import { escapeHtml } from "./lib/format.js";
+
 const params = new URLSearchParams(location.search);
 const blockedUrl = params.get("url") || "";
 const host = params.get("host") || "";
 const taskParam = params.get("task") || "";
+const pageTitle = params.get("title") || "";
 const driftReason = params.get("drift") || "";
+const askReason = params.get("askReason") || "";
 const startedDenied = params.get("denied") === "1";
 
 document.getElementById("urlBox").textContent = blockedUrl || "(unknown)";
@@ -13,6 +17,10 @@ if (driftReason) {
   box.hidden = false;
   box.className = "verdict drift";
   box.innerHTML = `<strong>Drift detected.</strong> ${escapeHtml(driftReason)}`;
+} else if (askReason) {
+  const box = document.getElementById("askReasonBox");
+  box.hidden = false;
+  box.innerHTML = `<strong>AI's read:</strong> ${escapeHtml(askReason)}`;
 }
 
 function send(msg) {
@@ -51,7 +59,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     return;
   }
   setStatus(status, `<div class="muted tiny"><span class="spinner"></span>Asking the AI…</div>`);
-  const r = await send({ type: "evaluateReason", host, reason });
+  const r = await send({ type: "evaluateReason", host, reason, url: blockedUrl, title: pageTitle });
   if (!r) { setStatus(status, `<div class="error">No response from background.</div>`); return; }
   if (r.approved) {
     setStatus(status, `<div class="verdict approved"><strong>Approved.</strong> ${escapeHtml(r.reason)}</div>`);
@@ -73,23 +81,71 @@ async function closeThisTab() {
 document.getElementById("backBtn").addEventListener("click", closeThisTab);
 document.getElementById("lockedBack").addEventListener("click", closeThisTab);
 
-document.getElementById("overrideBtn").addEventListener("click", async () => {
-  const code = document.getElementById("code").value;
+// Override requires a deliberate 5-second press-and-hold — no accidental taps,
+// and enough friction that future-you has to really mean it.
+(() => {
+  const HOLD_MS = 5000;
+  const btn = document.getElementById("overrideBtn");
+  const fill = document.getElementById("holdFill");
+  const label = document.getElementById("holdLabel");
   const status = document.getElementById("overrideStatus");
-  const r = await send({ type: "tryOverride", host, code });
-  if (r && r.ok) {
-    setStatus(status, `<div class="ok">Override accepted. Continuing…</div>`);
-    setTimeout(proceed, 500);
-  } else {
-    setStatus(status, `<div class="error">Wrong code.</div>`);
-  }
-});
+  let rafId = null, startedAt = 0, firing = false;
 
-function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));
-}
+  function reset() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null; startedAt = 0;
+    fill.style.width = "0%";
+    btn.classList.remove("holding");
+    if (!firing) label.textContent = "Hold to override (5s)";
+  }
+
+  function frame(now) {
+    const pct = Math.min(100, ((now - startedAt) / HOLD_MS) * 100);
+    fill.style.width = pct + "%";
+    if (pct >= 100) { rafId = null; complete(); return; }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  async function complete() {
+    firing = true;
+    label.textContent = "Checking…";
+    const code = document.getElementById("code").value;
+    const r = await send({ type: "tryOverride", host, code });
+    if (r && r.ok) {
+      setStatus(status, `<div class="ok">Override accepted. Continuing…</div>`);
+      label.textContent = "Override accepted";
+      setTimeout(proceed, 500);
+    } else {
+      setStatus(status, `<div class="error">Wrong code.</div>`);
+      firing = false;
+      reset();
+    }
+  }
+
+  function startHold(e) {
+    e.preventDefault();
+    if (firing || rafId) return;
+    if (!document.getElementById("code").value.trim()) {
+      setStatus(status, `<div class="error">Enter your override code first.</div>`);
+      return;
+    }
+    setStatus(status, "");
+    btn.classList.add("holding");
+    label.textContent = "Keep holding…";
+    startedAt = performance.now();
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function cancelHold() {
+    if (firing || !rafId) return;
+    reset();
+  }
+
+  btn.addEventListener("pointerdown", startHold);
+  btn.addEventListener("pointerup", cancelHold);
+  btn.addEventListener("pointerleave", cancelHold);
+  btn.addEventListener("pointercancel", cancelHold);
+})();
 
 function playBlockSound() {
   try {
