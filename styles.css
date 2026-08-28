@@ -1,10 +1,3 @@
-/* Locus — shared styles. Warm paper + ink, one clean yellow accent. */
-
-/* Instrument Serif is bundled, not fetched from a CDN: a remote webfont with
-   font-display:swap visibly re-rendered the UI in a fallback and then swapped,
-   and left the wordmark as Georgia whenever the machine was offline. Loading it
-   from disk also stops every popup open from pinging Google.
-   SIL Open Font License 1.1 — see fonts/OFL.txt. */
 @font-face {
   font-family: "Instrument Serif";
   font-style: normal;
